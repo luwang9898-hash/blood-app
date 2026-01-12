@@ -11,7 +11,11 @@ import numpy as np
 from datetime import datetime
 from scipy.interpolate import make_interp_spline
 
+
+matplotlib.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'Liberation Sans', 'Bitstream Vera Sans', 'sans-serif']
+matplotlib.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
 # 导入配置
+
 from config import (
     MALE_ATHLETES, FEMALE_ATHLETES,
     MALE_REF_RANGES, FEMALE_REF_RANGES,
