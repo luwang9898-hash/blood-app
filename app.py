@@ -12,8 +12,10 @@ from datetime import datetime
 from scipy.interpolate import make_interp_spline
 
 
-matplotlib.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'Liberation Sans', 'Bitstream Vera Sans', 'sans-serif']
-matplotlib.rcParams['axes.unicode_minus'] = False  # 解决负号显示问题
+matplotlib.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial', 'Liberation Sans']
+matplotlib.rcParams['axes.unicode_minus'] = False
+plt.rcParams['font.family'] = ['sans-serif']
+plt.rcParams['font.sans-serif'] = ['DejaVu Sans', 'Arial']
 # 导入配置
 
 from config import (
