@@ -10,12 +10,31 @@ import matplotlib
 import numpy as np
 from datetime import datetime
 from scipy.interpolate import make_interp_spline
+# ========== 中文字体配置（完整版）==========
+import matplotlib.font_manager as fm
+import os
 
+# 设置字体
+matplotlib.rcParams['font.family'] = ['sans-serif']
+matplotlib.rcParams['font.sans-serif'] = [
+    'Noto Sans CJK SC',
+    'Noto Sans CJK TC', 
+    'Noto Sans CJK JP',
+    'Noto Sans CJK KR',
+    'WenQuanYi Micro Hei',
+    'WenQuanYi Zen Hei',
+    'AR PL UMing CN',
+    'AR PL UKai CN',
+    'DejaVu Sans',
+    'sans-serif'
+]
+matplotlib.rcParams['axes.unicode_minus'] = False
 
-
-plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
-
-plt.rcParams['axes.unicode_minus']=False#用来正常显示负号
+# 重建字体缓存
+try:
+    fm._load_fontmanager(try_read_cache=False)
+except:
+    pass
 # 导入配置
 
 from config import (
