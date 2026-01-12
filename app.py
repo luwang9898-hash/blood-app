@@ -568,9 +568,9 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
             cell_text.append([f"  {col_name}", val_str, range_str, status])
             cell_colors.append(['#F8F8F8', bg_color, '#F8F8F8', bg_color])
 
-    # 创建图表（4列）
+    # 创建图表（4列，高清晰度）
     fig_height = len(cell_text) * 0.7 + 1.5
-    fig, ax = plt.subplots(figsize=(10, fig_height))
+    fig, ax = plt.subplots(figsize=(10, fig_height), dpi=150)
     ax.axis('off')
 
     col_widths = [0.45, 0.18, 0.18, 0.19]
@@ -653,7 +653,7 @@ def plot_trend_chart_multi(df, indicator, ref_ranges, selected_athletes, date_ra
     all_dates = sorted(list(dates_with_data))
     date_to_index = {date: i for i, date in enumerate(all_dates)}
 
-    fig, ax = plt.subplots(figsize=(12, 7))
+    fig, ax = plt.subplots(figsize=(12, 7), dpi=150)
     ax.set_facecolor(COLOR_CHART_BG)
 
     # 协调配色列表（用于多运动员曲线）
@@ -710,8 +710,17 @@ def plot_trend_chart_multi(df, indicator, ref_ranges, selected_athletes, date_ra
         # 绘制数据点
         ax.plot(x_data, y_data, marker='o', markersize=8, markerfacecolor='white',
                 markeredgecolor=color, markeredgewidth=2, linestyle='None')
+        
+        # 只为主运动员（第一个运动员）标注数据值
+        if idx == 0:
+            for x, y in zip(x_data, y_data):
+                ax.text(x, y, f'{y:.1f}', 
+                       fontsize=9, ha='center', va='bottom',
+                       color=color, fontweight='bold',
+                       bbox=dict(boxstyle='round,pad=0.3', facecolor='white', 
+                                edgecolor=color, alpha=0.8, linewidth=1))
 
-    # 在绘制数据后，添加正常范围标记
+    # 在绘制数据后，添加理想范围标记
     if indicator in ref_ranges and len(all_y_values) > 0:
         ranges = ref_ranges[indicator]
         low_2 = ranges.get('low_2')
@@ -830,8 +839,8 @@ def plot_radar_chart_with_baseline(athlete_df, radar_fields, lower_is_better, re
     angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
     angles += angles[:1]
 
-    # 创建图表
-    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True))
+    # 创建图表（高清晰度）
+    fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True), dpi=150)
     plt.ylim(-limit - 1.0, limit)
 
     # 绘制零线
@@ -872,11 +881,11 @@ def plot_radar_chart_with_baseline(athlete_df, radar_fields, lower_is_better, re
     normal_range_lower.append(normal_range_lower[0])
     normal_range_upper.append(normal_range_upper[0])
     
-    # 绘制正常范围区域（浅绿色填充）
+    # 绘制理想范围区域（浅绿色填充）
     ax.fill_between(angles, normal_range_lower, normal_range_upper, 
-                     color='#90EE90', alpha=0.2, zorder=1, label='正常范围')
+                     color='#90EE90', alpha=0.2, zorder=1, label='理想范围')
     
-    # 绘制正常范围边界线
+    # 绘制理想范围边界线
     ax.plot(angles, normal_range_lower, color='#32CD32', linewidth=1.5, 
             linestyle=':', alpha=0.6, zorder=1)
     ax.plot(angles, normal_range_upper, color='#32CD32', linewidth=1.5, 
