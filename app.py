@@ -14,39 +14,25 @@ from scipy.interpolate import make_interp_spline
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
-import sys
+import os
 
-# 清除字体缓存
-try:
-    import shutil
-    cache_dir = matplotlib.get_cachedir()
-    if os.path.exists(cache_dir):
-        shutil.rmtree(cache_dir)
-except:
-    pass
+# 获取字体文件路径
+font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'SimHei.ttf')
 
-# 设置中文字体
-matplotlib.rcParams['font.family'] = ['sans-serif']
-matplotlib.rcParams['font.sans-serif'] = [
-    'Noto Sans CJK SC',
-    'Noto Sans CJK TC',
-    'WenQuanYi Micro Hei',
-    'WenQuanYi Zen Hei', 
-    'AR PL UMing CN',
-    'SimHei',
-    'STHeiti',
-    'Microsoft YaHei',
-    'DejaVu Sans'
-]
-matplotlib.rcParams['axes.unicode_minus'] = False
-
-# 强制重新加载字体
-plt.rcParams.update(matplotlib.rcParams)
-
-# 打印可用字体（调试用）
-if st.sidebar.checkbox("显示可用字体（调试）", False):
-    font_list = [f.name for f in fm.fontManager.ttflist]
-    st.sidebar.write("可用字体：", font_list[:20])
+# 检查字体文件是否存在
+if os.path.exists(font_path):
+    # 临时注册字体
+    fm.fontManager.addfont(font_path)
+    
+    # 设置字体
+    plt.rcParams['font.sans-serif'] = ['SimHei']
+    plt.rcParams['axes.unicode_minus'] = False
+    
+    print(f"✅ 成功加载中文字体：{font_path}")
+else:
+    print(f"❌ 字体文件不存在：{font_path}")
+    # 使用默认字体
+    plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
 # 导入配置
 
 from config import (
