@@ -724,7 +724,7 @@ def plot_trend_chart_multi(df, indicator, ref_ranges, selected_athletes, date_ra
         
         # 情况1：同时有上下限（完整范围）
         if pd.notna(low_2) and pd.notna(high_2):
-            ax.axhspan(low_2, high_2, color='#4A90E2', alpha=0.15, zorder=0, label='正常范围')
+            ax.axhspan(low_2, high_2, color='#4A90E2', alpha=0.15, zorder=0, label='理想范围')
             ax.axhline(low_2, color=COLOR_SEVERE_LOW, linestyle=':', linewidth=1, alpha=0.7)
             ax.axhline(high_2, color=COLOR_SEVERE_HIGH, linestyle=':', linewidth=1, alpha=0.7)
         
@@ -732,14 +732,14 @@ def plot_trend_chart_multi(df, indicator, ref_ranges, selected_athletes, date_ra
         elif pd.notna(high_2) and not pd.notna(low_2):
             # 从0或数据最小值往下一点开始
             y_min = min(0, data_min - y_range * 0.1)
-            ax.axhspan(y_min, high_2, color='#4A90E2', alpha=0.15, zorder=0, label=f'正常范围 (< {high_2})')
+            ax.axhspan(y_min, high_2, color='#4A90E2', alpha=0.15, zorder=0, label=f'理想范围 (< {high_2})')
             ax.axhline(high_2, color=COLOR_SEVERE_HIGH, linestyle=':', linewidth=1.5, alpha=0.7)
         
         # 情况3：只有下限（如 > 50）
         elif pd.notna(low_2) and not pd.notna(high_2):
             # 到数据最大值往上一点
             y_max = data_max + y_range * 0.1
-            ax.axhspan(low_2, y_max, color='#4A90E2', alpha=0.15, zorder=0, label=f'正常范围 (> {low_2})')
+            ax.axhspan(low_2, y_max, color='#4A90E2', alpha=0.15, zorder=0, label=f'理想范围 (> {low_2})')
             ax.axhline(low_2, color=COLOR_SEVERE_LOW, linestyle=':', linewidth=1.5, alpha=0.7)
 
     # 设置坐标轴 - 只显示有数据的日期
