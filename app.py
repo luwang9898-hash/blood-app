@@ -660,7 +660,7 @@ def plot_trend_chart_multi(df, indicator, ref_ranges, selected_athletes, date_ra
         high_2 = ranges.get('high_2')
 
         if pd.notna(low_2) and pd.notna(high_2):
-            ax.axhspan(low_2, high_2, color=COLOR_NORMAL, alpha=0.15, zorder=0, label='理想范围')
+            ax.axhspan(low_2, high_2, color='#4A90E2', alpha=0.15, zorder=0, label='理想范围')
             ax.axhline(low_2, color=COLOR_SEVERE_LOW, linestyle=':', linewidth=1, alpha=0.7)
             ax.axhline(high_2, color=COLOR_SEVERE_HIGH, linestyle=':', linewidth=1, alpha=0.7)
 
@@ -809,6 +809,51 @@ def plot_radar_chart_with_baseline(athlete_df, radar_fields, lower_is_better, re
 
     # 绘制零线
     ax.plot(angles, [0] * len(angles), color='red', linewidth=2, linestyle='--', zorder=0.5)
+
+    # ========== 绘制正常范围（浅绿色背景）==========
+    normal_range_lower = []
+    normal_range_upper = []
+    
+    for field in radar_fields:
+        if field in ref_ranges:
+            ranges = ref_ranges[field]
+            low_2 = ranges.get('low_2')  # 正常范围下限
+            high_2 = ranges.get('high_2')  # 正常范围上限
+            stats = baseline_stats.get(field)
+            
+            if pd.notna(low_2) and pd.notna(high_2) and stats and stats['sigma'] != 0:
+                # 计算正常范围对应的z值
+                z_lower = (low_2 - stats['mu']) / stats['sigma']
+                z_upper = (high_2 - stats['mu']) / stats['sigma']
+                
+                # 如果是逆指标，取反
+                if field in lower_is_better:
+                    z_lower, z_upper = -z_upper, -z_lower
+                
+                normal_range_lower.append(z_lower)
+                normal_range_upper.append(z_upper)
+            else:
+                # 如果没有参考范围，使用默认值
+                normal_range_lower.append(-1)
+                normal_range_upper.append(1)
+        else:
+            # 如果没有参考范围，使用默认值
+            normal_range_lower.append(-1)
+            normal_range_upper.append(1)
+    
+    # 闭合多边形
+    normal_range_lower.append(normal_range_lower[0])
+    normal_range_upper.append(normal_range_upper[0])
+    
+    # 绘制正常范围区域（浅绿色填充）
+    ax.fill_between(angles, normal_range_lower, normal_range_upper, 
+                     color='#90EE90', alpha=0.2, zorder=1, label='正常范围')
+    
+    # 绘制正常范围边界线
+    ax.plot(angles, normal_range_lower, color='#32CD32', linewidth=1.5, 
+            linestyle=':', alpha=0.6, zorder=1)
+    ax.plot(angles, normal_range_upper, color='#32CD32', linewidth=1.5, 
+            linestyle=':', alpha=0.6, zorder=1)
 
     # 选择样式 - 最近4次测试
     styles = RADAR_STYLES[-len(last_4_dates):]
@@ -997,6 +1042,24 @@ def main():
 
     st.markdown("---")
 
+    # === 获取所有可用的数值指标 ===
+    # 排除非指标列
+    exclude_cols = ['Name', 'Name_final', '姓名', 'Date', 'Date_auto', '日期', 'DateStr', 
+                    '性别', 'Gender', '编号', 'ID', 'Unnamed: 0']
+    all_numeric_indicators = []
+    for col in gender_df.columns:
+        if col not in exclude_cols:
+            # 检查是否是数值列
+            try:
+                if gender_df[col].dtype in ['float64', 'int64'] or pd.to_numeric(gender_df[col], errors='coerce').notna().any():
+                    all_numeric_indicators.append(col)
+            except:
+                pass
+    
+    # 如果没有找到数值列，使用默认的TREND_INDICATORS
+    if not all_numeric_indicators:
+        all_numeric_indicators = TREND_INDICATORS
+
     # === 功能选项卡 ===
     tab1, tab2, tab3, tab4 = st.tabs(["📋 主题表格", "📈 趋势对比", "🎯 雷达图", "📊 数据表"])
 
@@ -1055,9 +1118,9 @@ def main():
         # 选择指标
         selected_indicators = st.multiselect(
             "选择要分析的指标",
-            TREND_INDICATORS,
-            default=TREND_INDICATORS[:3],
-            help="选择要绘制趋势图的指标"
+            all_numeric_indicators,
+            default=all_numeric_indicators[:3] if len(all_numeric_indicators) >= 3 else all_numeric_indicators,
+            help="选择要绘制趋势图的指标（可选择所有数值指标）"
         )
 
         if st.button("🚀 生成趋势对比图", type="primary", use_container_width=True):
@@ -1101,9 +1164,9 @@ def main():
         # 选择雷达图指标
         radar_indicators = st.multiselect(
             "选择雷达图指标",
-            RADAR_FIELDS,
-            default=RADAR_FIELDS,
-            help="选择要在雷达图中显示的指标（建议4-10个）"
+            all_numeric_indicators,
+            default=all_numeric_indicators[:8] if len(all_numeric_indicators) >= 8 else all_numeric_indicators,
+            help="选择要在雷达图中显示的指标（建议4-10个，可选择所有数值指标）"
         )
 
         # 选择逆指标（值越低越好的指标）
