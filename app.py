@@ -12,7 +12,6 @@ from datetime import datetime
 from scipy.interpolate import make_interp_spline
 
 
-mpl.font_manager.fontManager.addfont('字体/SimHei.ttf') #临时注册新的全局字体
 
 plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
 
