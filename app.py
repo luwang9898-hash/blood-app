@@ -12,10 +12,11 @@ from datetime import datetime
 from scipy.interpolate import make_interp_spline
 
 
-matplotlib.rcParams['font.sans-serif'] = ['Noto Sans CJK SC', 'Noto Sans CJK TC', 'DejaVu Sans']
-matplotlib.rcParams['axes.unicode_minus'] = False
-plt.rcParams['font.family'] = ['sans-serif']
-plt.rcParams['font.sans-serif'] = ['Noto Sans CJK SC', 'Noto Sans CJK TC', 'DejaVu Sans']
+mpl.font_manager.fontManager.addfont('字体/SimHei.ttf') #临时注册新的全局字体
+
+plt.rcParams['font.sans-serif']=['SimHei'] #用来正常显示中文标签
+
+plt.rcParams['axes.unicode_minus']=False#用来正常显示负号
 # 导入配置
 
 from config import (
