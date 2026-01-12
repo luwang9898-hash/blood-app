@@ -38,8 +38,11 @@ else:
 from config import (
     MALE_ATHLETES, FEMALE_ATHLETES,
     MALE_REF_RANGES, FEMALE_REF_RANGES,
-    COLUMN_NAME_MAPPING, TREND_INDICATORS
+    COLUMN_NAME_MAPPING
 )
+
+# 趋势图默认指标
+TREND_INDICATORS = ['睾酮', '皮质醇', '肌酸激酶', '血尿素', '血红蛋白', '铁蛋白', '白细胞', '网织红细胞百分比']
 
 # ============================================================================
 # 参考范围解析函数
@@ -216,7 +219,7 @@ THEME_CONFIG = {
     '2_合成代谢与恢复能力': {
         '一、促合成-恢复能力': {'睾酮': '睾酮T (ng/dl)', '游离睾酮': '游离睾酮FT (ng/dl)'},
         '二、氧转运': {
-            '红细胞': '红细胞RBC (10¹²/L)', '血红蛋白': '血红蛋白Hb (g/L)',
+            '红细胞': '红细胞RBC (10^12/L)', '血红蛋白': '血红蛋白Hb (g/L)',
             '网织红细胞百分比': '网织红细胞百分比retic%',
         },
     },
@@ -231,8 +234,8 @@ THEME_CONFIG = {
     '4_炎症免疫反应': {
         '一、高尿酸血症': {'尿酸': '尿酸UA (umol/L)'},
         '二、免疫/炎性反应': {
-            '超敏C反应蛋白': '超敏C反应蛋白hsCRP (mg/L)', '白细胞': '白细胞WBC (10⁹/L)',
-            '血小板': '血小板PLT (10⁹/L)',
+            '超敏C反应蛋白': '超敏C反应蛋白hsCRP (mg/L)', '白细胞': '白细胞WBC (10^9/L)',
+            '血小板': '血小板PLT (10^9/L)',
         }
     },
 }
@@ -653,17 +656,6 @@ def plot_trend_chart_multi(df, indicator, ref_ranges, selected_athletes, date_ra
     fig, ax = plt.subplots(figsize=(12, 7))
     ax.set_facecolor(COLOR_CHART_BG)
 
-    # 标记正常范围
-    if indicator in ref_ranges:
-        ranges = ref_ranges[indicator]
-        low_2 = ranges.get('low_2')
-        high_2 = ranges.get('high_2')
-
-        if pd.notna(low_2) and pd.notna(high_2):
-            ax.axhspan(low_2, high_2, color='#4A90E2', alpha=0.15, zorder=0, label='理想范围')
-            ax.axhline(low_2, color=COLOR_SEVERE_LOW, linestyle=':', linewidth=1, alpha=0.7)
-            ax.axhline(high_2, color=COLOR_SEVERE_HIGH, linestyle=':', linewidth=1, alpha=0.7)
-
     # 协调配色列表（用于多运动员曲线）
     harmonious_colors = [
         '#4A90E2',  # 深海蓝
@@ -682,6 +674,9 @@ def plot_trend_chart_multi(df, indicator, ref_ranges, selected_athletes, date_ra
     else:
         colors = [harmonious_colors[i % len(harmonious_colors)] for i in range(len(selected_athletes))]
 
+    # 先收集所有y值，用于确定范围
+    all_y_values = []
+    
     # 绘制每个运动员的数据
     for idx, (athlete, color) in enumerate(zip(selected_athletes, colors)):
         athlete_data = df_with_indicator[df_with_indicator[name_col] == athlete].copy()
@@ -697,6 +692,7 @@ def plot_trend_chart_multi(df, indicator, ref_ranges, selected_athletes, date_ra
 
         x_data = np.array([date_to_index[d] for d in valid_data['DateStr']])
         y_data = valid_data[actual_col].values
+        all_y_values.extend(y_data)
 
         # 绘制平滑曲线
         if len(valid_data) > 1:
@@ -714,6 +710,37 @@ def plot_trend_chart_multi(df, indicator, ref_ranges, selected_athletes, date_ra
         # 绘制数据点
         ax.plot(x_data, y_data, marker='o', markersize=8, markerfacecolor='white',
                 markeredgecolor=color, markeredgewidth=2, linestyle='None')
+
+    # 在绘制数据后，添加正常范围标记
+    if indicator in ref_ranges and len(all_y_values) > 0:
+        ranges = ref_ranges[indicator]
+        low_2 = ranges.get('low_2')
+        high_2 = ranges.get('high_2')
+        
+        # 获取实际数据范围
+        data_min = min(all_y_values)
+        data_max = max(all_y_values)
+        y_range = data_max - data_min
+        
+        # 情况1：同时有上下限（完整范围）
+        if pd.notna(low_2) and pd.notna(high_2):
+            ax.axhspan(low_2, high_2, color='#4A90E2', alpha=0.15, zorder=0, label='正常范围')
+            ax.axhline(low_2, color=COLOR_SEVERE_LOW, linestyle=':', linewidth=1, alpha=0.7)
+            ax.axhline(high_2, color=COLOR_SEVERE_HIGH, linestyle=':', linewidth=1, alpha=0.7)
+        
+        # 情况2：只有上限（如 < 300）
+        elif pd.notna(high_2) and not pd.notna(low_2):
+            # 从0或数据最小值往下一点开始
+            y_min = min(0, data_min - y_range * 0.1)
+            ax.axhspan(y_min, high_2, color='#4A90E2', alpha=0.15, zorder=0, label=f'正常范围 (< {high_2})')
+            ax.axhline(high_2, color=COLOR_SEVERE_HIGH, linestyle=':', linewidth=1.5, alpha=0.7)
+        
+        # 情况3：只有下限（如 > 50）
+        elif pd.notna(low_2) and not pd.notna(high_2):
+            # 到数据最大值往上一点
+            y_max = data_max + y_range * 0.1
+            ax.axhspan(low_2, y_max, color='#4A90E2', alpha=0.15, zorder=0, label=f'正常范围 (> {low_2})')
+            ax.axhline(low_2, color=COLOR_SEVERE_LOW, linestyle=':', linewidth=1.5, alpha=0.7)
 
     # 设置坐标轴 - 只显示有数据的日期
     ax.set_xticks(np.arange(len(all_dates)))
@@ -1116,10 +1143,16 @@ def main():
             date_range = None
 
         # 选择指标
+        # 构建默认选择：优先使用TREND_INDICATORS中存在于数据的指标
+        default_trend = [ind for ind in TREND_INDICATORS if ind in all_numeric_indicators]
+        if not default_trend and all_numeric_indicators:
+            # 如果TREND_INDICATORS中的指标都不在数据中，使用前3个
+            default_trend = all_numeric_indicators[:3] if len(all_numeric_indicators) >= 3 else all_numeric_indicators
+        
         selected_indicators = st.multiselect(
             "选择要分析的指标",
             all_numeric_indicators,
-            default=all_numeric_indicators[:3] if len(all_numeric_indicators) >= 3 else all_numeric_indicators,
+            default=default_trend,
             help="选择要绘制趋势图的指标（可选择所有数值指标）"
         )
 
@@ -1162,10 +1195,16 @@ def main():
         )
 
         # 选择雷达图指标
+        # 构建默认选择：优先使用RADAR_FIELDS中存在于数据的指标
+        default_radar = [ind for ind in RADAR_FIELDS if ind in all_numeric_indicators]
+        if not default_radar and all_numeric_indicators:
+            # 如果RADAR_FIELDS中的指标都不在数据中，使用前8个
+            default_radar = all_numeric_indicators[:8] if len(all_numeric_indicators) >= 8 else all_numeric_indicators
+        
         radar_indicators = st.multiselect(
             "选择雷达图指标",
             all_numeric_indicators,
-            default=all_numeric_indicators[:8] if len(all_numeric_indicators) >= 8 else all_numeric_indicators,
+            default=default_radar,
             help="选择要在雷达图中显示的指标（建议4-10个，可选择所有数值指标）"
         )
 
