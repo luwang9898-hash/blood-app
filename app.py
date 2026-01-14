@@ -1,5 +1,5 @@
 """
-运动员血液指标分析系统 - 增强版 (已修复数值格式化Bug)
+运动员血液指标分析系统 - 增强版
 包含：表格图、趋势图（多运动员对比）、雷达图
 """
 
@@ -10,9 +10,11 @@ import matplotlib
 import numpy as np
 from datetime import datetime
 from scipy.interpolate import make_interp_spline
+# ========== 中文字体配置（完整版）==========
+import matplotlib
+import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import os
-import traceback
 
 # 获取字体文件路径
 font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'SimHei.ttf')
@@ -31,23 +33,18 @@ else:
     print(f"❌ 字体文件不存在：{font_path}")
     # 使用默认字体
     plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
-
 # 导入配置
-try:
-    from config import (
-        MALE_REF_RANGES, FEMALE_REF_RANGES,
-        COLUMN_NAME_MAPPING
-    )
-except ImportError:
-    MALE_REF_RANGES = {}
-    FEMALE_REF_RANGES = {}
-    COLUMN_NAME_MAPPING = {}
+
+from config import (
+    MALE_REF_RANGES, FEMALE_REF_RANGES,
+    COLUMN_NAME_MAPPING
+)
 
 # 趋势图默认指标
 TREND_INDICATORS = ['睾酮', '皮质醇', '肌酸激酶', '血尿素', '血红蛋白', '铁蛋白', '白细胞', '网织红细胞百分比']
 
 # ============================================================================
-# 基础功能函数
+# 参考范围解析函数
 # ============================================================================
 def check_password():
     def password_entered():
@@ -68,24 +65,49 @@ def check_password():
 
 if not check_password():
     st.stop()
-
 def parse_range_value(value_str):
+    """
+    解析范围值字符串
+
+    支持格式：
+    - "210-430" → (210, 430)
+    - "< 210" → (None, 210)
+    - "> 500" → (500, None)
+    - "36.63" → (36.63, 36.63)
+    - "6.0-20.0" → (6.0, 20.0)
+    - "-" → (None, None)
+    """
     if pd.isna(value_str) or str(value_str).strip() == '-' or str(value_str).strip() == '':
         return None, None
+
     value_str = str(value_str).strip()
+
+    # 处理 "< X" 格式
     if value_str.startswith('<'):
         val = value_str.replace('<', '').strip()
-        try: return None, float(val)
-        except: return None, None
+        try:
+            return None, float(val)
+        except:
+            return None, None
+
+    # 处理 "> X" 格式
     if value_str.startswith('>'):
         val = value_str.replace('>', '').strip()
-        try: return float(val), None
-        except: return None, None
+        try:
+            return float(val), None
+        except:
+            return None, None
+
+    # 处理 "X-Y" 格式
     if '-' in value_str:
         parts = value_str.split('-')
         if len(parts) == 2:
-            try: return float(parts[0].strip()), float(parts[1].strip())
-            except: return None, None
+            try:
+                return float(parts[0].strip()), float(parts[1].strip())
+            except:
+                return None, None
+
+    # 处理单个数值
     try:
         val = float(value_str)
         return val, val
@@ -94,39 +116,69 @@ def parse_range_value(value_str):
 
 
 def load_reference_ranges_from_excel(file):
+    """
+    从上传的Excel文件加载参考范围
+
+    返回：
+    - male_ranges: 男性参考范围字典
+    - female_ranges: 女性参考范围字典
+    """
     try:
+        # 读取参考范围sheet
         df = pd.read_excel(file, sheet_name='参考范围')
+
         male_ranges = {}
         female_ranges = {}
         common_ranges = {}
+
+        # 遍历每一行
         for idx, row in df.iterrows():
             indicator = str(row['指标名称']).strip()
             gender = str(row['性别']).strip()
+
+            # 解析五档范围
             severe_low_val = row['严重偏低 (<)']
             low_range = row['偏低 (范围)']
             normal_range = row['参考范围 (正常)']
             high_range = row['偏高 (范围)']
             severe_high_val = row['严重偏高 (>)']
+
+            # 解析正常范围（这是最重要的）
             normal_low, normal_high = parse_range_value(normal_range)
+
+            # 解析其他范围
             severe_low_lower, severe_low_upper = parse_range_value(severe_low_val)
             low_lower, low_upper = parse_range_value(low_range)
             high_lower, high_upper = parse_range_value(high_range)
             severe_high_lower, severe_high_upper = parse_range_value(severe_high_val)
+
+            # 构建范围字典
             range_dict = {
                 'severe_low_1': severe_low_lower if severe_low_lower is not None else severe_low_upper,
                 'low_1': low_lower if low_lower is not None else None,
-                'low_2': normal_low,
-                'high_2': normal_high,
+                'low_2': normal_low,  # 正常范围下限
+                'high_2': normal_high,  # 正常范围上限
                 'high_1': high_upper if high_upper is not None else None,
                 'severe_high_1': severe_high_upper if severe_high_upper is not None else severe_high_lower,
             }
-            if gender == '男': male_ranges[indicator] = range_dict
-            elif gender == '女': female_ranges[indicator] = range_dict
-            elif gender == '通用': common_ranges[indicator] = range_dict
+
+            # 根据性别分类
+            if gender == '男':
+                male_ranges[indicator] = range_dict
+            elif gender == '女':
+                female_ranges[indicator] = range_dict
+            elif gender == '通用':
+                common_ranges[indicator] = range_dict
+
+        # 合并通用范围到男女范围
         for indicator, range_dict in common_ranges.items():
-            if indicator not in male_ranges: male_ranges[indicator] = range_dict
-            if indicator not in female_ranges: female_ranges[indicator] = range_dict
+            if indicator not in male_ranges:
+                male_ranges[indicator] = range_dict
+            if indicator not in female_ranges:
+                female_ranges[indicator] = range_dict
+
         return male_ranges, female_ranges
+
     except Exception as e:
         st.error(f"解析参考范围文件出错：{str(e)}")
         return {}, {}
@@ -145,6 +197,12 @@ st.set_page_config(
 )
 
 # ========== 增强配置 ==========
+
+# 主题配置 - 用于表格图
+# 新的主题配置 - 7个生理系统分类
+# 格式: '指标key': ('中文名', '英文名')
+
+# 一级分类中英文对照
 CATEGORY_NAMES = {
     '1_调控与指挥中心': ('调控与指挥中心（神经-内分泌系统）', 'Control and Command Center (Neuroendocrine System)'),
     '2_执行与代谢系统': ('执行与代谢系统（肌肉与能量状态）', 'Execution and Metabolic System (Muscle and Energy Status)'),
@@ -157,281 +215,590 @@ CATEGORY_NAMES = {
 
 THEME_CONFIG = {
     '1_调控与指挥中心': {
-        '合成代谢\nAnabolism': {'睾酮': ('睾酮', 'Testosterone'), '游离睾酮': ('游离睾酮', 'Free Testosterone')},
-        '分解代谢\nCatabolism': {'皮质醇': ('皮质醇', 'Cortisol')},
-        '状态平衡\nStatus Balance': {'睾酮/皮质醇比值': ('睾酮/皮质醇比值', 'T/C Ratio')}
+        '合成代谢\nAnabolism': {
+            '睾酮': ('睾酮', 'Testosterone'),
+            '游离睾酮': ('游离睾酮', 'Free Testosterone'),
+        },
+        '分解代谢\nCatabolism': {
+            '皮质醇': ('皮质醇', 'Cortisol'),
+        },
+        '状态平衡\nStatus Balance': {
+            '睾酮/皮质醇比值': ('睾酮/皮质醇比值', 'T/C Ratio'),
+        }
     },
+
     '2_执行与代谢系统': {
-        '结构完整性（硬件）\nStructural Integrity (Hardware)': {'肌酸激酶': ('肌酸激酶', 'Creatine Kinase')},
-        '能量储备与代谢（软件/燃料）\nEnergy Reserves and Metabolism (Software/Fuel)': {'血糖': ('血糖', 'Blood Glucose'), '血尿素': ('血尿素', 'Blood Urea'), '尿酸': ('尿酸', 'Uric Acid')}
+        '结构完整性（硬件）\nStructural Integrity (Hardware)': {
+            '肌酸激酶': ('肌酸激酶', 'Creatine Kinase'),
+        },
+        '能量储备与代谢（软件/燃料）\nEnergy Reserves and Metabolism (Software/Fuel)': {
+            '血糖': ('血糖', 'Blood Glucose'),
+            '血尿素': ('血尿素', 'Blood Urea'),
+            '尿酸': ('尿酸', 'Uric Acid'),
+        }
     },
+
     '3_循环与运载系统': {
-        '输送载体（红细胞）\nTransport Carrier (Red Blood Cells)': {'血红蛋白': ('血红蛋白', 'Hemoglobin'), '红细胞': ('红细胞', 'RBC Count'), '红细胞压积': ('红细胞压积', 'Hematocrit'), '网织红细胞百分比': ('网织红细胞百分比', 'Reticulocyte %'), '平均红细胞容积': ('平均红细胞容积', 'MCV')},
-        '生化原料（造血储备）\nBiochemical Raw Materials (Hematopoietic Reserves)': {'铁蛋白': ('铁蛋白', 'Ferritin'), '维生素B12': ('维生素B12', 'Vitamin B12'), '维生素B6': ('维生素B6', 'Vitamin B6'), '叶酸': ('叶酸', 'Folic Acid')}
+        '输送载体（红细胞）\nTransport Carrier (Red Blood Cells)': {
+            '血红蛋白': ('血红蛋白', 'Hemoglobin'),
+            '红细胞': ('红细胞', 'RBC Count'),
+            '红细胞压积': ('红细胞压积', 'Hematocrit'),
+            '网织红细胞百分比': ('网织红细胞百分比', 'Reticulocyte %'),
+            '平均红细胞容积': ('平均红细胞容积', 'MCV'),
+        },
+        '生化原料（造血储备）\nBiochemical Raw Materials (Hematopoietic Reserves)': {
+            '铁蛋白': ('铁蛋白', 'Ferritin'),
+            '维生素B12': ('维生素B12', 'Vitamin B12'),
+            '维生素B6': ('维生素B6', 'Vitamin B6'),
+            '叶酸': ('叶酸', 'Folic Acid'),
+        }
     },
+
     '4_后勤保障与维护': {
-        '免疫防御（炎性监控）\nImmune Defense (Inflammatory Monitoring)': {'白细胞': ('白细胞', 'WBC Count'), '超敏C反应蛋白': ('超敏C反应蛋白', 'hs-CRP'), '触珠蛋白': ('触珠蛋白', 'Haptoglobin')},
-        '代谢辅酶（微量营养）\nMetabolic Coenzymes (Micronutrients)': {'维生素B1': ('维生素B1', 'Vitamin B1'), '维生素B2': ('维生素B2', 'Vitamin B2'), '维生素D3': ('维生素D3', 'Vitamin D3')},
-        '内环境稳态（水盐平衡）\nInternal Environment Homeostasis (Water-Electrolyte Balance)': {'钾': ('钾', 'Potassium'), '钠': ('钠', 'Sodium'), '氯': ('氯', 'Chloride'), '渗透压': ('渗透压', 'Osmotic Pressure'), '血尿素/肌酐': ('血尿素/肌酐', 'BUN/Cr Ratio')}
+        '免疫防御（炎性监控）\nImmune Defense (Inflammatory Monitoring)': {
+            '白细胞': ('白细胞', 'WBC Count'),
+            '超敏C反应蛋白': ('超敏C反应蛋白', 'hs-CRP'),
+            '触珠蛋白': ('触珠蛋白', 'Haptoglobin'),
+        },
+        '代谢辅酶（微量营养）\nMetabolic Coenzymes (Micronutrients)': {
+            '维生素B1': ('维生素B1', 'Vitamin B1'),
+            '维生素B2': ('维生素B2', 'Vitamin B2'),
+            '维生素D3': ('维生素D3', 'Vitamin D3'),
+        },
+        '内环境稳态（水盐平衡）\nInternal Environment Homeostasis (Water-Electrolyte Balance)': {
+            '钾': ('钾', 'Potassium'),
+            '钠': ('钠', 'Sodium'),
+            '氯': ('氯', 'Chloride'),
+            '渗透压': ('渗透压', 'Osmotic Pressure'),
+            '血尿素/肌酐': ('血尿素/肌酐', 'BUN/Cr Ratio'),
+        }
     },
+
     '5_甲状腺功能': {
-        '甲状腺功能\nThyroid Function': {'总甲状腺素': ('总甲状腺素', 'Total Thyroxine'), '总三碘甲状腺原氨酸': ('总三碘甲状腺原氨酸', 'Total T3'), '游离三碘甲状原氨酸': ('游离三碘甲状原氨酸', 'Free T3'), '游离甲状腺素': ('游离甲状腺素', 'Free T4'), '超敏促甲状腺素': ('超敏促甲状腺素', 'hs-TSH')}
+        '甲状腺功能\nThyroid Function': {
+            '总甲状腺素': ('总甲状腺素', 'Total Thyroxine'),
+            '总三碘甲状腺原氨酸': ('总三碘甲状腺原氨酸', 'Total T3'),
+            '游离三碘甲状原氨酸': ('游离三碘甲状原氨酸', 'Free T3'),
+            '游离甲状腺素': ('游离甲状腺素', 'Free T4'),
+            '超敏促甲状腺素': ('超敏促甲状腺素', 'hs-TSH'),
+        }
     },
+
     '6_肝脏功能': {
-        '肝脏功能\nLiver Function': {'丙氨酸氨基转移酶': ('丙氨酸氨基转移酶', 'ALT'), '天冬氨酸氨基转移酶': ('天冬氨酸氨基转移酶', 'AST'), '碱性磷酸酶': ('碱性磷酸酶', 'ALP'), 'γ-谷氨酰基转移酶': ('γ-谷氨酰基转移酶', 'γ-GT'), '总胆红素': ('总胆红素', 'Total Bilirubin'), '直接胆红素': ('直接胆红素', 'Direct Bilirubin'), '总蛋白': ('总蛋白', 'Total Protein'), '间接胆红素': ('间接胆红素', 'Indirect Bilirubin')}
+        '肝脏功能\nLiver Function': {
+            '丙氨酸氨基转移酶': ('丙氨酸氨基转移酶', 'ALT'),
+            '天冬氨酸氨基转移酶': ('天冬氨酸氨基转移酶', 'AST'),
+            '碱性磷酸酶': ('碱性磷酸酶', 'ALP'),
+            'γ-谷氨酰基转移酶': ('γ-谷氨酰基转移酶', 'γ-GT'),
+            '总胆红素': ('总胆红素', 'Total Bilirubin'),
+            '直接胆红素': ('直接胆红素', 'Direct Bilirubin'),
+            '总蛋白': ('总蛋白', 'Total Protein'),
+            '间接胆红素': ('间接胆红素', 'Indirect Bilirubin'),
+        }
     },
+
     '7_血脂': {
-        '血脂\nBlood Lipids': {'甘油三酯': ('甘油三酯', 'Triglycerides'), '高密度脂蛋白': ('高密度脂蛋白', 'HDL'), '总胆固醇': ('总胆固醇', 'Total Cholesterol'), '低密度脂蛋白': ('低密度脂蛋白', 'LDL')}
+        '血脂\nBlood Lipids': {
+            '甘油三酯': ('甘油三酯', 'Triglycerides'),
+            '高密度脂蛋白': ('高密度脂蛋白', 'HDL'),
+            '总胆固醇': ('总胆固醇', 'Total Cholesterol'),
+            '低密度脂蛋白': ('低密度脂蛋白', 'LDL'),
+        }
     },
 }
 
+# 雷达图配置
 RADAR_FIELDS = ['睾酮', '皮质醇', '肌酸激酶', '血尿素', '血红蛋白', '铁蛋白', '白细胞', '网织红细胞百分比']
 LOWER_IS_BETTER = ['肌酸激酶', '血尿素', '超敏C反应蛋白', '皮质醇']
 
-COLOR_SEVERE_LOW = '#4A90E2'
-COLOR_LOW = '#8BC1E9'
-COLOR_NORMAL = '#E6E6E6'
-COLOR_HIGH = '#E89A9D'
-COLOR_SEVERE_HIGH = '#D05A5E'
-COLOR_CATEGORY_HEADER = '#5C7CFA'
-COLOR_CHART_BG = '#F8F9FA'
-RADAR_STYLES = [{'color': '#8BC1E9', 'linewidth': 2, 'linestyle': ':'}, {'color': '#E89A9D', 'linewidth': 2, 'linestyle': '-.'}, {'color': '#5C7CFA', 'linewidth': 2.5, 'linestyle': '--'}, {'color': '#D05A5E', 'linewidth': 3, 'linestyle': '-'}]
+# 颜色配置 - 五档评价配色
+COLOR_SEVERE_LOW = '#4A90E2'     # 深海蓝（严重偏低）
+COLOR_LOW = '#8BC1E9'            # 浅天蓝（偏低）
+COLOR_NORMAL = '#E6E6E6'         # 云雾灰（正常）
+COLOR_HIGH = '#E89A9D'           # 浅柔红（偏高/良好）
+COLOR_SEVERE_HIGH = '#D05A5E'    # 深砖红（严重偏高/优秀）
+COLOR_CATEGORY_HEADER = '#5C7CFA'  # 靛蓝（分类标题）
+COLOR_CHART_BG = '#F8F9FA'       # 极浅灰（图表背景）
+COLOR_MAIN = '#1f77b4'          # 主色调
 
-# ============================================================================
-# 数据处理核心函数
-# ============================================================================
-def deduplicate_columns(df):
-    if df is None: return None
-    new_columns = []
-    seen = {}
-    for col in df.columns:
-        col_str = str(col).strip()
-        if col_str in seen:
-            seen[col_str] += 1
-            new_col = f"{col_str}.{seen[col_str]}"
-        else:
-            seen[col_str] = 0
-            new_col = col_str
-        new_columns.append(new_col)
-    df.columns = new_columns
-    return df
+# 雷达图样式
+RADAR_STYLES = [
+    {'color': '#8BC1E9', 'linewidth': 2, 'linestyle': ':'},   # 第1次 - 浅天蓝
+    {'color': '#E89A9D', 'linewidth': 2, 'linestyle': '-.'},  # 第2次 - 浅柔红
+    {'color': '#5C7CFA', 'linewidth': 2.5, 'linestyle': '--'}, # 第3次 - 靛蓝
+    {'color': '#D05A5E', 'linewidth': 3, 'linestyle': '-'},   # 第4次（最新）- 深砖红
+]
+
+# ========== 数据加载函数 ==========
 
 def load_data_multisheet(file_path_or_buffer):
+    """
+    从多个sheet加载数据并合并
+    支持：月周测试指标、季度测试指标、年度测试指标、其他
+    处理双层表头
+    """
     try:
         st.info("📊 开始读取多个sheet的数据...")
+        
+        # ===== 1. 读取月周测试指标（主数据，header=0）=====
         st.write("正在读取：月周测试指标...")
-        df_monthly = pd.read_excel(file_path_or_buffer, sheet_name='月周测试指标', header=0, skiprows=lambda x: x in range(1, 11))
-        df_monthly = deduplicate_columns(df_monthly)
+        df_monthly = pd.read_excel(
+            file_path_or_buffer,
+            sheet_name='月周测试指标',
+            header=0,
+            skiprows=lambda x: x in range(1, 11)
+        )
         st.write(f"   ✓ 月周测试：{len(df_monthly)} 行，{len(df_monthly.columns)} 列")
         
+        # 确保列名唯一
+        new_columns = []
+        for i, col in enumerate(df_monthly.columns):
+            col_str = str(col)
+            count = new_columns.count(col_str)
+            if count > 0:
+                unique_col = f"{col_str}#{i}"
+                new_columns.append(unique_col)
+            else:
+                new_columns.append(col_str)
+        df_monthly.columns = new_columns
+        
+        # ===== 2. 读取季度测试指标（双层表头）- 维生素和电解质 =====
         df_quarterly = None
         try:
             st.write("正在读取：季度测试指标...")
-            df_q_raw = pd.read_excel(file_path_or_buffer, sheet_name='季度测试指标', header=[0, 1])
+            # 使用header=[0,1]读取双层表头
+            df_q_raw = pd.read_excel(
+                file_path_or_buffer,
+                sheet_name='季度测试指标',
+                header=[0, 1]
+            )
+            # 合并双层列名
             df_quarterly = flatten_multiindex_columns(df_q_raw, '季度测试')
-            df_quarterly = deduplicate_columns(df_quarterly)
             st.write(f"   ✓ 季度测试：{len(df_quarterly)} 行，{len(df_quarterly.columns)} 列")
         except Exception as e:
             st.warning(f"   ⚠ 季度测试指标读取失败：{e}")
         
+        # ===== 3. 读取年度测试指标（双层表头）- 甲状腺、肝功、血脂 =====
         df_yearly = None
         try:
             st.write("正在读取：年度测试指标...")
-            df_y_raw = pd.read_excel(file_path_or_buffer, sheet_name='年度测试指标', header=[0, 1])
+            df_y_raw = pd.read_excel(
+                file_path_or_buffer,
+                sheet_name='年度测试指标',
+                header=[0, 1]
+            )
             df_yearly = flatten_multiindex_columns(df_y_raw, '年度测试')
-            df_yearly = deduplicate_columns(df_yearly)
             st.write(f"   ✓ 年度测试：{len(df_yearly)} 行，{len(df_yearly.columns)} 列")
         except Exception as e:
             st.warning(f"   ⚠ 年度测试指标读取失败：{e}")
         
+        # ===== 4. 读取其他sheet（双层表头）- 触珠蛋白等 =====
         df_other = None
         try:
             st.write("正在读取：其他指标...")
-            df_o_raw = pd.read_excel(file_path_or_buffer, sheet_name='其他', header=[0, 1])
+            df_o_raw = pd.read_excel(
+                file_path_or_buffer,
+                sheet_name='其他',
+                header=[0, 1]
+            )
             df_other = flatten_multiindex_columns(df_o_raw, '其他')
-            df_other = deduplicate_columns(df_other)
             st.write(f"   ✓ 其他指标：{len(df_other)} 行，{len(df_other.columns)} 列")
         except Exception as e:
             st.warning(f"   ⚠ 其他指标读取失败：{e}")
         
+        # ===== 5. 合并数据 =====
         st.write("\n正在合并数据...")
         df_merged = merge_all_sheets(df_monthly, df_quarterly, df_yearly, df_other)
-        df_merged = deduplicate_columns(df_merged)
+        
         st.success(f"✅ 数据合并完成：{len(df_merged)} 行，{len(df_merged.columns)} 列")
+        
         return df_merged
+        
     except Exception as e:
         st.error(f"❌ 数据加载失败：{e}")
+        import traceback
         st.error(traceback.format_exc())
         return None
 
+
 def flatten_multiindex_columns(df, sheet_name):
+    """
+    将双层MultiIndex列名展平为单层
+    确保所有列名唯一
+    """
     new_columns = []
+    
     for col in df.columns:
         if isinstance(col, tuple):
+            # 双层列名
             level0, level1 = col[0], col[1]
-            if not (pd.isna(level0) or str(level0).startswith('Unnamed')): new_columns.append(str(level0))
-            elif not (pd.isna(level1) or str(level1).startswith('Unnamed')): new_columns.append(str(level1))
-            else: new_columns.append(f'Unnamed_{len(new_columns)}')
-        else: new_columns.append(str(col))
+            
+            # 如果第0层是有效的列名（项目、姓名、测试日期等），优先使用
+            if not (pd.isna(level0) or str(level0).startswith('Unnamed')):
+                # 基础信息列
+                col_name = str(level0)
+            # 否则使用第1层
+            elif not (pd.isna(level1) or str(level1).startswith('Unnamed')):
+                # 指标列
+                col_name = str(level1)
+            else:
+                # 都是无效的，使用Unnamed
+                col_name = f'Unnamed_{len(new_columns)}'
+        else:
+            # 单层列名
+            col_name = str(col)
+        
+        new_columns.append(col_name)
+    
+    # 🔧 关键修复：确保列名唯一
     df.columns = new_columns
+    
+    # 处理重复的列名
+    seen = {}
+    unique_columns = []
+    for col in df.columns:
+        if col in seen:
+            seen[col] += 1
+            unique_columns.append(f"{col}_{seen[col]}")
+        else:
+            seen[col] = 0
+            unique_columns.append(col)
+    
+    df.columns = unique_columns
+    
     return df
 
+
 def merge_all_sheets(df_monthly, df_quarterly, df_yearly, df_other):
+    """
+    合并所有sheet的数据
+    使用姓名和测试日期作为合并键
+    """
+    # 以月周测试数据为基础
     df_result = df_monthly.copy()
+    
+    # 确定合并键 - 尝试多种可能的列名
     name_col_monthly = None
     for col_name in ['姓名', 'Name', 'Name_final']:
         if col_name in df_result.columns:
             name_col_monthly = col_name
             break
+    
     date_col_monthly = None
     for col_name in ['测试日期', 'Date', 'Date_auto']:
         if col_name in df_result.columns:
             date_col_monthly = col_name
             break
+    
     if not name_col_monthly or not date_col_monthly:
         st.warning("⚠ 无法找到姓名或日期列，仅使用月周测试数据")
         return df_result
     
-    df_result['_merge_key'] = df_result[name_col_monthly].astype(str).fillna('') + '_' + df_result[date_col_monthly].astype(str).fillna('')
+    # 创建合并键
+    df_result['_merge_key'] = (
+        df_result[name_col_monthly].astype(str) + '_' + 
+        df_result[date_col_monthly].astype(str)
+    )
     
-    if df_quarterly is not None: df_result = merge_sheet_data(df_result, df_quarterly, name_col_monthly, date_col_monthly, '季度测试')
-    if df_yearly is not None: df_result = merge_sheet_data(df_result, df_yearly, name_col_monthly, date_col_monthly, '年度测试')
-    if df_other is not None: df_result = merge_sheet_data(df_result, df_other, name_col_monthly, date_col_monthly, '其他')
+    # 合并季度测试数据
+    if df_quarterly is not None:
+        df_result = merge_sheet_data(df_result, df_quarterly, name_col_monthly, date_col_monthly, '季度测试')
     
-    if '_merge_key' in df_result.columns: df_result = df_result.drop('_merge_key', axis=1)
+    # 合并年度测试数据
+    if df_yearly is not None:
+        df_result = merge_sheet_data(df_result, df_yearly, name_col_monthly, date_col_monthly, '年度测试')
+    
+    # 合并其他数据
+    if df_other is not None:
+        df_result = merge_sheet_data(df_result, df_other, name_col_monthly, date_col_monthly, '其他')
+    
+    # 删除临时合并键
+    if '_merge_key' in df_result.columns:
+        df_result = df_result.drop('_merge_key', axis=1)
+    
     return df_result
 
+
 def merge_sheet_data(df_main, df_add, name_col, date_col, sheet_name):
+    """
+    将额外sheet的数据合并到主数据框
+    """
     try:
-        df_add = deduplicate_columns(df_add)
+        # 🔧 新增：检查df_add是否有重复列名
+        if df_add.columns.duplicated().any():
+            st.warning(f"   ⚠ {sheet_name}：发现重复列名，正在修复...")
+            # 修复重复列名
+            seen = {}
+            unique_columns = []
+            for col in df_add.columns:
+                if col in seen:
+                    seen[col] += 1
+                    unique_columns.append(f"{col}_{seen[col]}")
+                else:
+                    seen[col] = 0
+                    unique_columns.append(col)
+            df_add.columns = unique_columns
+            st.write(f"   ✓ 列名已唯一化")
+        
+        # 在额外sheet中找到对应的姓名和日期列
         name_col_add = None
-        if name_col in df_add.columns: name_col_add = name_col
-        else:
-            for col_name in ['姓名', 'Name', 'Name_final']:
-                if col_name in df_add.columns:
-                    name_col_add = col_name
-                    break
+        for col_name in ['姓名', 'Name', 'Name_final']:
+            if col_name in df_add.columns:
+                name_col_add = col_name
+                break
+        
         date_col_add = None
-        if date_col in df_add.columns: date_col_add = date_col
-        else:
-            for col_name in ['测试日期', 'Date', 'Date_auto']:
-                if col_name in df_add.columns:
-                    date_col_add = col_name
-                    break
-        if not name_col_add or not date_col_add:
-            st.warning(f"   ⚠ {sheet_name}：无法找到姓名或日期列，跳过合并")
+        for col_name in ['测试日期', 'Date', 'Date_auto']:
+            if col_name in df_add.columns:
+                date_col_add = col_name
+                break
+        
+        if not name_col_add:
+            st.warning(f"   ⚠ {sheet_name}：无法找到姓名列，跳过合并")
+            return df_main
+            
+        if not date_col_add:
+            st.warning(f"   ⚠ {sheet_name}：无法找到日期列，跳过合并")
             return df_main
         
-        s_name = df_add[name_col_add].astype(str).fillna('')
-        s_date = df_add[date_col_add].astype(str).fillna('')
-        df_add['_merge_key'] = s_name + '_' + s_date
+        # 创建合并键（使用.copy()避免SettingWithCopyWarning）
+        df_add = df_add.copy()
+        df_add['_merge_key'] = (
+            df_add[name_col_add].astype(str) + '_' + 
+            df_add[date_col_add].astype(str)
+        )
         
-        exclude_cols = ['项目', '编号', '姓名', '性别', '出生年月日', '身高', '体重', '测试日期', 'Name', 'Name_final', 'Date', 'Date_auto', '_merge_key', '教练', '训练地点', '测试单位', '测试阶段', '重点运动员', '专项', name_col_add, date_col_add]
+        # 选择要合并的指标列（排除基本信息列）
+        exclude_cols = [
+            '项目', '编号', '姓名', '性别', '出生年月日', '身高', '体重', '测试日期', 
+            'Name', 'Name_final', 'Date', 'Date_auto', '_merge_key',
+            '教练', '训练地点', '测试单位', '测试阶段', '重点运动员', '专项'
+        ]
+        
         indicator_cols = []
         for col in df_add.columns:
-            if col in exclude_cols: continue
-            if str(col).startswith('Unnamed'): continue
-            if col == '_merge_key': continue
+            if col in exclude_cols:
+                continue
+            if str(col).startswith('Unnamed'):
+                continue
+            if pd.isna(col):
+                continue
             indicator_cols.append(col)
         
-        if not indicator_cols: return df_main
+        if len(indicator_cols) == 0:
+            st.warning(f"   ⚠ {sheet_name}：没有找到指标列，跳过合并")
+            return df_main
         
-        df_add_indicators = df_add[['_merge_key'] + indicator_cols].drop_duplicates(subset=['_merge_key'])
-        df_merged = df_main.merge(df_add_indicators, on='_merge_key', how='left', suffixes=('', f'_{sheet_name}'))
+        # 只保留指标列和合并键
+        df_add_indicators = df_add[['_merge_key'] + indicator_cols].copy()
+        
+        # 🔧 新增：检查df_add_indicators是否有重复列名
+        if df_add_indicators.columns.duplicated().any():
+            st.warning(f"   ⚠ {sheet_name}：指标列有重复，正在去重...")
+            # 再次确保唯一性
+            seen = {}
+            unique_columns = []
+            for col in df_add_indicators.columns:
+                if col in seen:
+                    seen[col] += 1
+                    unique_columns.append(f"{col}_{seen[col]}")
+                else:
+                    seen[col] = 0
+                    unique_columns.append(col)
+            df_add_indicators.columns = unique_columns
+        
+        # 合并数据
+        df_merged = df_main.merge(
+            df_add_indicators,
+            on='_merge_key',
+            how='left',
+            suffixes=('', f'_from_{sheet_name}')
+        )
+        
+        # 🔧 新增：合并后再次检查重复列名
+        if df_merged.columns.duplicated().any():
+            st.warning(f"   ⚠ 合并后发现重复列名，正在修复...")
+            seen = {}
+            unique_columns = []
+            for col in df_merged.columns:
+                if col in seen:
+                    seen[col] += 1
+                    unique_columns.append(f"{col}_{seen[col]}")
+                else:
+                    seen[col] = 0
+                    unique_columns.append(col)
+            df_merged.columns = unique_columns
+        
         st.write(f"   ✓ {sheet_name}合并：添加了 {len(indicator_cols)} 个指标")
+        
         return df_merged
+        
     except Exception as e:
         st.warning(f"   ⚠ {sheet_name}合并失败：{e}")
+        import traceback
+        st.write(traceback.format_exc())
         return df_main
 
+
+
+def clean_data_final(df):
+    """数据清洗函数"""
+    if df is None:
+        return None
+
+    st.info("🧹 开始清洗数据...")
+
+    # 删除空行
+    df = df.dropna(how='all')
+    df = df.reset_index(drop=True)
+
+    # 处理姓名列
+    if '姓名' in df.columns:
+        name_cols = [col for col in df.columns if col.startswith('Name')]
+        if not name_cols:
+            df['Name'] = df['姓名']
+        else:
+            df['Name_final'] = df['姓名']
+
+    # 处理日期列
+    possible_date_cols = ['测试日期', '日期', '开始日期']
+    date_col_found = False
+
+    for col in possible_date_cols:
+        if col in df.columns:
+            try:
+                date_cols = [c for c in df.columns if c.startswith('Date')]
+
+                if not date_cols:
+                    if pd.api.types.is_datetime64_any_dtype(df[col]):
+                        df['Date'] = df[col]
+                    else:
+                        df['Date'] = pd.to_datetime(df[col], errors='coerce')
+
+                    df['DateStr'] = df['Date'].dt.strftime('%Y-%m-%d')
+                    date_col_found = True
+                else:
+                    date_col_found = True
+
+                break
+
+            except Exception as e:
+                continue
+
+    if not date_col_found:
+        df['Date_auto'] = pd.date_range(start='2024-01-01', periods=len(df), freq='D')
+        df['DateStr'] = df['Date_auto'].dt.strftime('%Y-%m-%d')
+
+    # 最终清理
+    df = df.dropna(how='all')
+    df = df.reset_index(drop=True)
+
+    st.success(f"✅ 清洗完成：保留 {len(df)} 行有效数据")
+
+    return df
+
+# ========== 辅助函数 ==========
+
 def get_indicator_status(indicator, value, ref_ranges):
-    if indicator not in ref_ranges or pd.isna(value): return '数据缺失', '#F0F8FF', 'N/A'
+    """判断指标状态（五档）- 完全修复版"""
+    # 先检查是否为NaN
+    if indicator not in ref_ranges or pd.isna(value):
+        return '数据缺失', '#F0F8FF', 'N/A'
+    
+    # 🔧 修复1：转换value为数值类型
     try:
         if isinstance(value, str):
             value = value.strip()
-            if value == '' or value == '-' or value.lower() == 'nan': return '数据缺失', '#F0F8FF', 'N/A'
+            if value == '' or value == '-' or value.lower() == 'nan':
+                return '数据缺失', '#F0F8FF', 'N/A'
             value = float(value)
-        elif not isinstance(value, (int, float)): value = float(value)
-    except (ValueError, TypeError): return '数据缺失', '#F0F8FF', 'N/A'
+        elif not isinstance(value, (int, float)):
+            value = float(value)
+    except (ValueError, TypeError):
+        return '数据缺失', '#F0F8FF', 'N/A'
 
     ranges = ref_ranges[indicator]
+    
+    # 🔧 修复2：确保参考范围值也是数值类型
     try:
         low_1 = ranges.get('low_1')
         low_2 = ranges.get('low_2')
         high_2 = ranges.get('high_2')
         high_1 = ranges.get('high_1')
-        for v in [low_1, low_2, high_2, high_1]:
-            if v is not None and not isinstance(v, (int, float)):
-                try: v = float(v) 
-                except: pass
-    except (ValueError, TypeError): return '数据缺失', '#F0F8FF', 'N/A'
+        
+        # 转换参考范围值为浮点数
+        if low_1 is not None and not isinstance(low_1, (int, float)):
+            low_1 = float(low_1) if not pd.isna(low_1) else None
+        if low_2 is not None and not isinstance(low_2, (int, float)):
+            low_2 = float(low_2) if not pd.isna(low_2) else None
+        if high_2 is not None and not isinstance(high_2, (int, float)):
+            high_2 = float(high_2) if not pd.isna(high_2) else None
+        if high_1 is not None and not isinstance(high_1, (int, float)):
+            high_1 = float(high_1) if not pd.isna(high_1) else None
+    except (ValueError, TypeError):
+        return '数据缺失', '#F0F8FF', 'N/A'
 
+    # 高优指标列表（高于正常范围是好事）
     high_is_better_indicators = ['铁蛋白', '血红蛋白', '睾酮', '游离睾酮']
+
+    # 🔧 修复3：判断状态时添加异常保护
     try:
-        if pd.notna(low_1) and value < low_1: return '严重偏低', COLOR_SEVERE_LOW, 'severe_low'
-        elif pd.notna(low_2) and value < low_2: return '偏低', COLOR_LOW, 'low'
+        if pd.notna(low_1) and value < low_1:
+            return '严重偏低', COLOR_SEVERE_LOW, 'severe_low'
+        elif pd.notna(low_2) and value < low_2:
+            return '偏低', COLOR_LOW, 'low'
         elif pd.notna(high_1) and value > high_1:
-            if indicator in high_is_better_indicators: return '优秀', COLOR_SEVERE_HIGH, 'excellent'
-            else: return '严重偏高', COLOR_SEVERE_HIGH, 'severe_high'
+            if indicator in high_is_better_indicators:
+                return '优秀', COLOR_SEVERE_HIGH, 'excellent'
+            else:
+                return '严重偏高', COLOR_SEVERE_HIGH, 'severe_high'
         elif pd.notna(high_2) and value > high_2:
-            if indicator in high_is_better_indicators: return '良好', COLOR_HIGH, 'good'
-            else: return '偏高', COLOR_HIGH, 'high'
-        else: return '正常', COLOR_NORMAL, 'normal'
-    except (TypeError, ValueError): return '数据缺失', '#F0F8FF', 'N/A'
+            if indicator in high_is_better_indicators:
+                return '良好', COLOR_HIGH, 'good'
+            else:
+                return '偏高', COLOR_HIGH, 'high'
+        else:
+            return '正常', COLOR_NORMAL, 'normal'
+    except (TypeError, ValueError):
+        return '数据缺失', '#F0F8FF', 'N/A'
 
-def clean_data_final(df):
-    if df is None: return None
-    st.info("🧹 开始清洗数据...")
-    df = df.dropna(how='all').reset_index(drop=True)
-    if '姓名' in df.columns:
-        name_cols = [col for col in df.columns if col.startswith('Name')]
-        if not name_cols: df['Name'] = df['姓名']
-        else: df['Name_final'] = df['姓名']
-    possible_date_cols = ['测试日期', '日期', '开始日期']
-    date_col_found = False
-    for col in possible_date_cols:
-        if col in df.columns:
-            try:
-                date_cols = [c for c in df.columns if c.startswith('Date')]
-                if not date_cols:
-                    if pd.api.types.is_datetime64_any_dtype(df[col]): df['Date'] = df[col]
-                    else: df['Date'] = pd.to_datetime(df[col], errors='coerce')
-                    df['DateStr'] = df['Date'].dt.strftime('%Y-%m-%d')
-                    date_col_found = True
-                else: date_col_found = True
-                break
-            except Exception as e: continue
-    if not date_col_found:
-        df['Date_auto'] = pd.date_range(start='2024-01-01', periods=len(df), freq='D')
-        df['DateStr'] = df['Date_auto'].dt.strftime('%Y-%m-%d')
-    df = df.dropna(how='all').reset_index(drop=True)
-    st.success(f"✅ 清洗完成：保留 {len(df)} 行有效数据")
-    return df
 
+# 指标别名映射（用于处理常见的名称差异）
 INDICATOR_ALIASES = {
+    # 红细胞指标
     '平均红细胞血红蛋白浓度': ['平均红细胞血红浓度', 'MCHC', '平均血红蛋白浓度'],
     '平均红细胞血红蛋白': ['平均红细胞血红蛋白量', 'MCH'],
     '平均红细胞体积': ['平均红细胞容积', 'MCV'],
     '平均红细胞容积': ['平均红细胞体积', 'MCV'],
     '平均血红蛋白浓度': ['平均红细胞血红蛋白浓度', 'MCHC'],
     '网织红细胞百分比': ['网织红细胞', 'retic', 'Retic'],
+    
+    # 炎症指标
     '超敏C反应蛋白': ['C反应蛋白', 'CRP', 'hsCRP', 'hs-CRP'],
+    
+    # 维生素指标（季度测试）
     '维生素B1': ['VB1', 'VitB1'],
     '维生素B2': ['VB2', 'VitB2'],
     '维生素B6': ['VB6', 'VitB6', 'VitB6(PA)', 'vitB6（PLP）'],
     '维生素B12': ['VB12', 'VitB12'],
     '叶酸': ['FOL', '维生素B9'],
     '维生素D3': ['VD3', 'VD3(25-OH)', 'VD-(25-OH)'],
+    
+    # 电解质（季度测试）
     '钾': ['K'],
     '钠': ['Na'],
     '氯': ['Cl'],
     '钙': ['Ca'],
     '镁': ['Mg'],
+    
+    # 甲状腺功能（年度测试）
     '总甲状腺素': ['T4', 'TT4'],
     '总三碘甲状腺原氨酸': ['T3', 'TT3'],
     '游离三碘甲状原氨酸': ['FT3', '游离T3'],
     '游离甲状腺素': ['FT4', '游离T4'],
     '超敏促甲状腺素': ['TSH', 'hs-TSH', '促甲状腺激素'],
+    
+    # 肝功能（年度测试）
     '丙氨酸氨基转移酶': ['ALT', '谷丙转氨酶', '丙氨酸基转移酶'],
     '天冬氨酸氨基转移酶': ['AST', '谷草转氨酶'],
     '碱性磷酸酶': ['ALP'],
@@ -441,6 +808,8 @@ INDICATOR_ALIASES = {
     '间接胆红素': ['IBIL', 'IB'],
     '总蛋白': ['TP'],
     '白蛋白': ['ALB', 'Alb'],
+    
+    # 血脂（年度测试）
     '甘油三酯': ['TG', 'TAG'],
     '高密度脂蛋白': ['HDL', 'HDL-C'],
     '总胆固醇': ['TC', 'CHOL'],
@@ -448,127 +817,239 @@ INDICATOR_ALIASES = {
 }
 
 def find_indicator_column(df, indicator):
-    if indicator in df.columns: return indicator
+    """智能查找指标列（支持带#的列名、模糊匹配、别名匹配）"""
+
+    # 方法1：精确匹配
+    if indicator in df.columns:
+        return indicator
+
+    # 方法2：别名匹配
+    # 先查找是否有直接的别名定义
     if indicator in INDICATOR_ALIASES:
         for alias in INDICATOR_ALIASES[indicator]:
-            if alias in df.columns: return alias
+            if alias in df.columns:
+                return alias
+            # 也尝试前缀匹配别名
             possible_cols = [col for col in df.columns if str(col).startswith(alias)]
-            if possible_cols: return possible_cols[0]
+            if possible_cols:
+                return possible_cols[0]
+
+    # 反向查找：indicator是否是某个别名
     for main_name, aliases in INDICATOR_ALIASES.items():
         if indicator in aliases:
-            if main_name in df.columns: return main_name
+            # 尝试匹配主名称
+            if main_name in df.columns:
+                return main_name
             possible_cols = [col for col in df.columns if str(col).startswith(main_name)]
-            if possible_cols: return possible_cols[0]
+            if possible_cols:
+                return possible_cols[0]
+            # 尝试匹配其他别名
             for alias in aliases:
-                if alias in df.columns: return alias
+                if alias in df.columns:
+                    return alias
                 possible_cols = [col for col in df.columns if str(col).startswith(alias)]
-                if possible_cols: return possible_cols[0]
+                if possible_cols:
+                    return possible_cols[0]
+
+    # 方法3：前缀匹配（处理带#的列名）
     possible_cols = [col for col in df.columns if str(col).startswith(indicator)]
-    if possible_cols: return possible_cols[0]
+    if possible_cols:
+        return possible_cols[0]
+
+    # 方法4：去除空格后匹配
     indicator_no_space = indicator.replace(' ', '').replace('\u3000', '')
     for col in df.columns:
         col_no_space = str(col).replace(' ', '').replace('\u3000', '')
-        if col_no_space == indicator_no_space: return col
-        if col_no_space.startswith(indicator_no_space): return col
-    import re
-    indicator_clean = re.sub(r'[（(].*?[）)]', '', indicator).strip()
+        if col_no_space == indicator_no_space:
+            return col
+        if col_no_space.startswith(indicator_no_space):
+            return col
+
+    # 方法5：部分匹配（宽松匹配）
     for col in df.columns:
-        col_str = str(col).split('#')[0]
-        col_clean = re.sub(r'[（(].*?[）)]', '', col_str).strip()
-        if indicator_clean == col_clean: return col
-        if indicator_clean in col_clean or col_clean in indicator_clean: return col
+        col_str = str(col)
+        col_base = col_str.split('#')[0]  # 去除#后缀
+
+        # 如果指标名是列名的子串
+        if indicator in col_str or indicator in col_base:
+            return col
+
+        # 如果列名是指标名的子串
+        if col_base in indicator:
+            return col
+
+    # 方法6：关键词匹配（最宽松）
+    import re
+    indicator_clean = re.sub(r'[（(].*?[）)]', '', indicator)  # 去除括号及内容
+    indicator_clean = indicator_clean.strip()
+
+    for col in df.columns:
+        col_str = str(col).split('#')[0]  # 去除#后缀
+        col_clean = re.sub(r'[（(].*?[）)]', '', col_str)
+        col_clean = col_clean.strip()
+
+        # 如果清理后的名称相同
+        if indicator_clean == col_clean:
+            return col
+
+        # 如果指标名包含在列名中，或列名包含在指标名中
+        if indicator_clean in col_clean or col_clean in indicator_clean:
+            return col
+
+    # 方法7：模糊匹配（允许1-2个字符不同）
+    # 例如："平均红细胞血红浓度" vs "平均红细胞血红蛋白浓度"
     for col in df.columns:
         col_str = str(col).split('#')[0].strip()
+        # 去除括号内容后比较
         col_clean = re.sub(r'[（(].*?[）)]', '', col_str).strip()
         indicator_clean_v2 = re.sub(r'[（(].*?[）)]', '', indicator).strip()
+
+        # 如果长度相近（差距在3个字符以内）
         if abs(len(col_clean) - len(indicator_clean_v2)) <= 3:
+            # 计算相似度：有多少个字符是相同的
             common_chars = sum(1 for c in indicator_clean_v2 if c in col_clean)
             similarity = common_chars / max(len(indicator_clean_v2), len(col_clean))
-            if similarity >= 0.8: return col
+
+            # 如果相似度超过80%，认为匹配
+            if similarity >= 0.8:
+                return col
+
     return None
 
+# ========== 图表生成函数 ==========
+
 def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
-    """生成主题表格图 (修复数值格式化问题)"""
-    if athlete_df.empty: return None, []
+    """生成主题表格图 - 支持中英文双行显示"""
+    if athlete_df.empty:
+        return None, []
+
     latest_row = athlete_df.iloc[-1]
     latest_date = latest_row.get('DateStr', '未知')
     athlete_name = latest_row.get('Name', latest_row.get('Name_final', '未知'))
+
     cell_text = []
     cell_colors = []
-    missing_indicators = []
+    missing_indicators = []  # 记录缺失的指标
+
+    # 状态中英文对照（包含优秀、良好等）
     status_translation = {
-        '严重偏低': ('严重偏低', 'Severely Low'), '偏低': ('偏低', 'Low'),
-        '正常': ('正常', 'Normal'), '良好': ('良好', 'Good'),
-        '偏高': ('偏高', 'High'), '优秀': ('优秀', 'Excellent'),
+        '严重偏低': ('严重偏低', 'Severely Low'),
+        '偏低': ('偏低', 'Low'),
+        '正常': ('正常', 'Normal'),
+        '良好': ('良好', 'Good'),
+        '偏高': ('偏高', 'High'),
+        '优秀': ('优秀', 'Excellent'),
         '严重偏高': ('严重偏高', 'Severely High'),
-        '-': ('—', '—'), 'N/A': ('—', '—'), '未找到': ('—', '—'),
+        '-': ('—', '—'),  # 无数据或未找到
+        'N/A': ('—', '—'),  # 保留兼容
+        '未找到': ('—', '—'),  # 保留兼容
     }
 
     for category_title, indicators in categories.items():
+        # 添加分类标题行（4列）- 居中对齐
         cell_text.append([category_title, '', '', ''])
         cell_colors.append([COLOR_CATEGORY_HEADER, COLOR_CATEGORY_HEADER, COLOR_CATEGORY_HEADER, COLOR_CATEGORY_HEADER])
+
         for col_key, name_tuple in indicators.items():
+            # name_tuple是(中文名, 英文名)
             cn_name, en_name = name_tuple
-            # 睾酮/皮质醇比值计算
+            
+            # 特殊处理：睾酮/皮质醇比值需要计算
             if col_key == '睾酮/皮质醇比值':
+                # 查找睾酮和皮质醇
                 testosterone_col = find_indicator_column(athlete_df, '睾酮')
                 cortisol_col = find_indicator_column(athlete_df, '皮质醇')
-                val_str = "—"
-                status = "-"
-                bg_color = '#F8F8F8'
-                range_str = "—"
-                if testosterone_col and cortisol_col and testosterone_col in latest_row.index and cortisol_col in latest_row.index:
+                
+                if testosterone_col and cortisol_col and \
+                   testosterone_col in latest_row.index and cortisol_col in latest_row.index:
                     t_val = latest_row[testosterone_col]
                     c_val = latest_row[cortisol_col]
+                    
                     if pd.notna(t_val) and pd.notna(c_val) and c_val != 0:
+                        # 计算比值
                         val = t_val / c_val
                         val_str = f"{val:.2f}"
+                        
+                        # 判断状态（这里需要根据参考范围判断）
                         status, bg_color, _ = get_indicator_status(col_key, val, ref_ranges)
-                    else: missing_indicators.append((col_key, f"{cn_name}/{en_name}"))
-                else: missing_indicators.append((col_key, f"{cn_name}/{en_name}"))
-                if col_key in ref_ranges:
-                    ranges = ref_ranges[col_key]
-                    low_2 = ranges.get('low_2')
-                    high_2 = ranges.get('high_2')
-                    if pd.notna(low_2) and pd.notna(high_2): range_str = f"{low_2:.1f}-{high_2:.1f}"
-                    elif pd.notna(low_2): range_str = f"≥{low_2:.1f}"
-                    elif pd.notna(high_2): range_str = f"≤{high_2:.1f}"
-            else:
-                actual_col = find_indicator_column(athlete_df, col_key)
-                range_str = "—"
-                if col_key in ref_ranges:
-                    ranges = ref_ranges[col_key]
-                    low_2 = ranges.get('low_2')
-                    high_2 = ranges.get('high_2')
-                    if pd.notna(low_2) and pd.notna(high_2): range_str = f"{low_2:.1f}-{high_2:.1f}"
-                    elif pd.notna(low_2): range_str = f"≥{low_2:.1f}"
-                    elif pd.notna(high_2): range_str = f"≤{high_2:.1f}"
-
-                if actual_col and actual_col in latest_row.index:
-                    raw_val = latest_row[actual_col]
-                    
-                    # 尝试转为float用于数值判断和格式化 (Fix TypeError)
-                    val = None
-                    try: val = float(raw_val)
-                    except (ValueError, TypeError): val = None
-
-                    status, bg_color, _ = get_indicator_status(col_key, raw_val, ref_ranges)
-                    
-                    if val is not None and pd.notna(val):
-                        if abs(val) >= 1000: val_str = f"{val:.0f}"
-                        elif abs(val) >= 100: val_str = f"{val:.1f}"
-                        else: val_str = f"{val:.2f}"
                     else:
-                        # 非数值数据直接显示字符串
-                        val_str = str(raw_val) if pd.notna(raw_val) and str(raw_val).lower() != 'nan' else "—"
+                        val_str = "—"
+                        status = "-"
+                        bg_color = '#F8F8F8'
                 else:
                     val_str = "—"
                     status = "-"
                     bg_color = '#F8F8F8'
                     missing_indicators.append((col_key, f"{cn_name}/{en_name}"))
+                
+                # 获取正常范围
+                range_str = "—"
+                if col_key in ref_ranges:
+                    ranges = ref_ranges[col_key]
+                    low_2 = ranges.get('low_2')
+                    high_2 = ranges.get('high_2')
+                    
+                    if pd.notna(low_2) and pd.notna(high_2):
+                        range_str = f"{low_2:.1f}-{high_2:.1f}"
+                    elif pd.notna(low_2):
+                        range_str = f"≥{low_2:.1f}"
+                    elif pd.notna(high_2):
+                        range_str = f"≤{high_2:.1f}"
+            else:
+                # 普通指标处理
+                # 查找实际的列名
+                actual_col = find_indicator_column(athlete_df, col_key)
 
+                # 获取正常范围
+                range_str = "—"
+                if col_key in ref_ranges:
+                    ranges = ref_ranges[col_key]
+                    low_2 = ranges.get('low_2')
+                    high_2 = ranges.get('high_2')
+
+                    if pd.notna(low_2) and pd.notna(high_2):
+                        # 两个值都存在，显示范围
+                        range_str = f"{low_2:.1f}-{high_2:.1f}"
+                    elif pd.notna(low_2):
+                        # 只有下限
+                        range_str = f"≥{low_2:.1f}"
+                    elif pd.notna(high_2):
+                        # 只有上限
+                        range_str = f"≤{high_2:.1f}"
+
+                if actual_col and actual_col in latest_row.index:
+                    val = latest_row[actual_col]
+                    status, bg_color, _ = get_indicator_status(col_key, val, ref_ranges)
+
+                    if pd.notna(val):
+                        # 🔧 转换为数值类型
+                        try:
+                            val = float(val)
+                            if abs(val) >= 1000:
+                                val_str = f"{val:.0f}"
+                            elif abs(val) >= 100:
+                                val_str = f"{val:.1f}"
+                            else:
+                                val_str = f"{val:.2f}"
+                        except (ValueError, TypeError):
+                            val_str = "—"
+                            status = "-"
+                            bg_color = '#F8F8F8'
+                    else:
+                        val_str = "—"
+                        status = "-"  # 无数据显示为"-"
+                        bg_color = '#F8F8F8'
+                else:
+                    val_str = "—"
+                    status = "-"  # 未找到显示为"-"
+                    bg_color = '#F8F8F8'  # 浅灰色背景
+                    missing_indicators.append((col_key, f"{cn_name}/{en_name}"))
+
+            # 构建双行文本
             indicator_text = f"{cn_name}\n{en_name}"
-            if status == "-": status_text = "—"
+            # 如果status是"-"，直接显示"-"，否则查询翻译
+            if status == "-":
+                status_text = "—"
             else:
                 status_cn, status_en = status_translation.get(status, (status, status))
                 status_text = f"{status_cn}\n{status_en}"
@@ -576,74 +1057,143 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
             cell_text.append([indicator_text, val_str, range_str, status_text])
             cell_colors.append(['#F8F8F8', bg_color, '#F8F8F8', bg_color])
 
-    fig_height = len(cell_text) * 0.9 + 1.5
+    # 创建图表（4列，高清晰度）
+    fig_height = len(cell_text) * 0.9 + 1.5  # 增加行高以容纳双行文本
     fig, ax = plt.subplots(figsize=(10, fig_height), dpi=150)
     ax.axis('off')
+
     col_widths = [0.45, 0.18, 0.18, 0.19]
     table = ax.table(
-        cellText=cell_text, colLabels=['检测指标\nIndicator', '结果\nResult', '参考范围\nReference', '评价\nEvaluation'],
-        cellColours=cell_colors, loc='center', cellLoc='center', colColours=['#333333'] * 4, colWidths=col_widths
+        cellText=cell_text,
+        colLabels=['检测指标\nIndicator', '结果\nResult', '参考范围\nReference', '评价\nEvaluation'],
+        cellColours=cell_colors,
+        loc='center',
+        cellLoc='center',
+        colColours=['#333333'] * 4,
+        colWidths=col_widths
     )
+
     table.auto_set_font_size(False)
     table.set_fontsize(10)
-    table.scale(1, 2.8)
+    table.scale(1, 2.8)  # 增加行高比例
+
+    # 样式设置
     for (r, c), cell in table.get_celld().items():
-        if r == 0:
+        if r == 0:  # 表头
             cell.set_text_props(weight='bold', color='white', fontsize=9)
             cell.set_edgecolor('white')
-        elif cell.get_facecolor() == COLOR_CATEGORY_HEADER:
-            cell.set_text_props(weight='bold', color='white', ha='center', fontsize=11)
+        elif cell.get_facecolor() == COLOR_CATEGORY_HEADER:  # 分类标题
+            cell.set_text_props(weight='bold', color='white', ha='center', fontsize=11)  # 改为居中
             cell.set_edgecolor('white')
-        else:
+        else:  # 数据行
             cell.set_edgecolor('#DDDDDD')
-            if r > 0 and c == 0: cell.set_text_props(ha='left', fontsize=9)
-            elif r > 0 and c in [1, 2]: cell.set_text_props(fontsize=10)
-            elif r > 0 and c == 3: cell.set_text_props(fontsize=8.5)
+            if r > 0 and c == 0:  # 指标名称列，左对齐
+                cell.set_text_props(ha='left', fontsize=9)
+            elif r > 0 and c in [1, 2]:  # 数值和范围列，较小字体
+                cell.set_text_props(fontsize=10)
+            elif r > 0 and c == 3:  # 评价列
+                cell.set_text_props(fontsize=8.5)
 
+    # 获取中英文标题
     if theme_name in CATEGORY_NAMES:
         cn_title, en_title = CATEGORY_NAMES[theme_name]
         title_text = f"{athlete_name} ({gender}) - {cn_title}\n{en_title} ({latest_date})"
     else:
         theme_display = theme_name.split('_')[-1]
         title_text = f"{athlete_name} ({gender}) - {theme_display} ({latest_date})"
+    
     plt.title(title_text, y=0.99, fontsize=13, fontweight='bold')
+
     plt.tight_layout()
+
     return fig, missing_indicators
 
 def plot_trend_chart_multi(df, indicator, ref_ranges, selected_athletes, date_range, gender):
+    """绘制多运动员对比趋势图"""
+
+    # 查找实际的列名
     actual_col = find_indicator_column(df, indicator)
-    if not actual_col: return None
+    if not actual_col:
+        return None
+
+    # 筛选日期范围
     if date_range and len(date_range) == 2:
+        # 将date转换为datetime64以匹配df['Date']的类型
         start_date = pd.to_datetime(date_range[0])
         end_date = pd.to_datetime(date_range[1])
         df_filtered = df[(df['Date'] >= start_date) & (df['Date'] <= end_date)].copy()
-    else: df_filtered = df.copy()
-    if df_filtered.empty: return None
+    else:
+        df_filtered = df.copy()
+
+    if df_filtered.empty:
+        return None
+
+    # 获取名字列
     name_col = 'Name' if 'Name' in df_filtered.columns else 'Name_final'
+
+    # 只保留有该指标数据的日期
     df_with_indicator = df_filtered[df_filtered[actual_col].notna()].copy()
-    if df_with_indicator.empty: return None
+
+    if df_with_indicator.empty:
+        return None
+
+    # 获取所有选中运动员中有数据的日期（去重排序）
     dates_with_data = set()
     for athlete in selected_athletes:
         athlete_data = df_with_indicator[df_with_indicator[name_col] == athlete]
-        if not athlete_data.empty: dates_with_data.update(athlete_data['DateStr'].unique())
-    if not dates_with_data: return None
+        if not athlete_data.empty:
+            dates_with_data.update(athlete_data['DateStr'].unique())
+
+    # 如果没有任何数据，返回None
+    if not dates_with_data:
+        return None
+
+    # 排序日期
     all_dates = sorted(list(dates_with_data))
     date_to_index = {date: i for i, date in enumerate(all_dates)}
+
     fig, ax = plt.subplots(figsize=(12, 7), dpi=150)
     ax.set_facecolor(COLOR_CHART_BG)
-    harmonious_colors = ['#4A90E2', '#D05A5E', '#8BC1E9', '#E89A9D', '#5C7CFA', '#9B59B6', '#1ABC9C', '#E67E22']
-    if len(selected_athletes) > len(harmonious_colors): colors = plt.cm.tab10(np.linspace(0, 1, len(selected_athletes)))
-    else: colors = [harmonious_colors[i % len(harmonious_colors)] for i in range(len(selected_athletes))]
+
+    # 协调配色列表（用于多运动员曲线）
+    harmonious_colors = [
+        '#4A90E2',  # 深海蓝
+        '#D05A5E',  # 深砖红
+        '#8BC1E9',  # 浅天蓝
+        '#E89A9D',  # 浅柔红
+        '#5C7CFA',  # 靛蓝
+        '#9B59B6',  # 紫色
+        '#1ABC9C',  # 青绿
+        '#E67E22',  # 深橙
+    ]
+
+    # 确保有足够的颜色
+    if len(selected_athletes) > len(harmonious_colors):
+        colors = plt.cm.tab10(np.linspace(0, 1, len(selected_athletes)))
+    else:
+        colors = [harmonious_colors[i % len(harmonious_colors)] for i in range(len(selected_athletes))]
+
+    # 先收集所有y值，用于确定范围
     all_y_values = []
+    
+    # 绘制每个运动员的数据
     for idx, (athlete, color) in enumerate(zip(selected_athletes, colors)):
         athlete_data = df_with_indicator[df_with_indicator[name_col] == athlete].copy()
-        if athlete_data.empty: continue
+
+        if athlete_data.empty:
+            continue
+
         athlete_data = athlete_data.sort_values('Date')
         valid_data = athlete_data.dropna(subset=[actual_col])
-        if len(valid_data) == 0: continue
+
+        if len(valid_data) == 0:
+            continue
+
         x_data = np.array([date_to_index[d] for d in valid_data['DateStr']])
         y_data = valid_data[actual_col].values
         all_y_values.extend(y_data)
+
+        # 绘制平滑曲线
         if len(valid_data) > 1:
             try:
                 x_smooth = np.linspace(x_data.min(), x_data.max(), 200)
@@ -651,249 +1201,600 @@ def plot_trend_chart_multi(df, indicator, ref_ranges, selected_athletes, date_ra
                 spl = make_interp_spline(x_data, y_data, k=k)
                 y_smooth = spl(x_smooth)
                 ax.plot(x_smooth, y_smooth, color=color, linewidth=2.5, label=athlete, alpha=0.8)
-            except: ax.plot(x_data, y_data, color=color, linewidth=2.5, label=athlete, alpha=0.8)
-        else: ax.plot(x_data, y_data, color=color, linewidth=2.5, label=athlete, linestyle='--', alpha=0.6)
-        ax.plot(x_data, y_data, marker='o', markersize=8, markerfacecolor='white', markeredgecolor=color, markeredgewidth=2, linestyle='None')
+            except:
+                ax.plot(x_data, y_data, color=color, linewidth=2.5, label=athlete, alpha=0.8)
+        else:
+            ax.plot(x_data, y_data, color=color, linewidth=2.5, label=athlete, linestyle='--', alpha=0.6)
+
+        # 绘制数据点
+        ax.plot(x_data, y_data, marker='o', markersize=8, markerfacecolor='white',
+                markeredgecolor=color, markeredgewidth=2, linestyle='None')
+        
+        # 只为主运动员（第一个运动员）标注数据值
         if idx == 0:
             for x, y in zip(x_data, y_data):
-                ax.text(x, y, f'{y:.1f}', fontsize=9, ha='center', va='bottom', color=color, fontweight='bold', bbox=dict(boxstyle='round,pad=0.3', facecolor='white', edgecolor=color, alpha=0.8, linewidth=1))
+                ax.text(x, y, f'{y:.1f}', 
+                       fontsize=9, ha='center', va='bottom',
+                       color=color, fontweight='bold',
+                       bbox=dict(boxstyle='round,pad=0.3', facecolor='white', 
+                                edgecolor=color, alpha=0.8, linewidth=1))
+
+    # 在绘制数据后，添加理想范围标记
     if indicator in ref_ranges and len(all_y_values) > 0:
         ranges = ref_ranges[indicator]
         low_2 = ranges.get('low_2')
         high_2 = ranges.get('high_2')
+        
+        # 获取实际数据范围
         data_min = min(all_y_values)
         data_max = max(all_y_values)
         y_range = data_max - data_min
+        
+        # 情况1：同时有上下限（完整范围）
         if pd.notna(low_2) and pd.notna(high_2):
             ax.axhspan(low_2, high_2, color='#4A90E2', alpha=0.15, zorder=0, label='理想范围')
             ax.axhline(low_2, color=COLOR_SEVERE_LOW, linestyle=':', linewidth=1, alpha=0.7)
             ax.axhline(high_2, color=COLOR_SEVERE_HIGH, linestyle=':', linewidth=1, alpha=0.7)
+        
+        # 情况2：只有上限（如 < 300）
         elif pd.notna(high_2) and not pd.notna(low_2):
+            # 从0或数据最小值往下一点开始
             y_min = min(0, data_min - y_range * 0.1)
             ax.axhspan(y_min, high_2, color='#4A90E2', alpha=0.15, zorder=0, label=f'理想范围 (< {high_2})')
             ax.axhline(high_2, color=COLOR_SEVERE_HIGH, linestyle=':', linewidth=1.5, alpha=0.7)
+        
+        # 情况3：只有下限（如 > 50）
         elif pd.notna(low_2) and not pd.notna(high_2):
+            # 到数据最大值往上一点
             y_max = data_max + y_range * 0.1
             ax.axhspan(low_2, y_max, color='#4A90E2', alpha=0.15, zorder=0, label=f'理想范围 (> {low_2})')
             ax.axhline(low_2, color=COLOR_SEVERE_LOW, linestyle=':', linewidth=1.5, alpha=0.7)
+
+    # 设置坐标轴 - 只显示有数据的日期
     ax.set_xticks(np.arange(len(all_dates)))
     ax.set_xticklabels(all_dates, rotation=45, ha='right')
+
     plt.title(f"{indicator} 趋势对比 ({gender})", fontsize=14, fontweight='bold')
     plt.xlabel('测试日期', fontsize=12)
     plt.ylabel(f'{indicator}', fontsize=12)
     plt.grid(axis='y', linestyle='--', alpha=0.5)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
+
+    # 图例
     plt.legend(loc='upper left', bbox_to_anchor=(1.01, 1), frameon=True)
     plt.tight_layout()
+
     return fig
 
 def plot_radar_chart_with_baseline(athlete_df, radar_fields, lower_is_better, ref_ranges, athlete_name, baseline_athletes_df, gender):
-    if athlete_df.empty: return None
+    """
+    绘制单个运动员的雷达图（最近4次测试）
+
+    参数：
+    - athlete_df: 主运动员的数据
+    - radar_fields: 雷达图指标列表
+    - lower_is_better: 逆指标列表
+    - ref_ranges: 参考范围
+    - athlete_name: 主运动员姓名
+    - baseline_athletes_df: 用于计算baseline的所有运动员数据（包括主运动员）
+    - gender: 性别
+    """
+    if athlete_df.empty:
+        return None
+
+    # 获取主运动员的最近4次数据
     last_4_dates = athlete_df['DateStr'].unique()[-4:]
-    if len(last_4_dates) == 0: return None
+    if len(last_4_dates) == 0:
+        return None
+
+    # 计算baseline统计值：使用对比运动员组的最近4次数据
+    # 这样可以看到主运动员相对于对比组的表现
     baseline_stats = {}
+
     for field in radar_fields:
         actual_col = find_indicator_column(baseline_athletes_df, field)
         if actual_col:
             col_data = baseline_athletes_df[actual_col].dropna()
-            if len(col_data) >= 2: baseline_stats[field] = {'mu': col_data.mean(), 'sigma': col_data.std()}
-            else: baseline_stats[field] = {'mu': col_data.mean() if len(col_data) > 0 else 0, 'sigma': 1}
-        else: baseline_stats[field] = {'mu': 0, 'sigma': 1}
+            if len(col_data) >= 2:
+                baseline_stats[field] = {'mu': col_data.mean(), 'sigma': col_data.std()}
+            else:
+                baseline_stats[field] = {'mu': col_data.mean() if len(col_data) > 0 else 0, 'sigma': 1}
+        else:
+            baseline_stats[field] = {'mu': 0, 'sigma': 1}
+
+    # 计算Z-score范围（用于设置坐标轴）
     athlete_z_scores = []
     for date in last_4_dates:
         date_row = athlete_df[athlete_df['DateStr'] == date]
-        if date_row.empty: continue
+        if date_row.empty:
+            continue
+
         for field in radar_fields:
             actual_col = find_indicator_column(date_row, field)
             stats = baseline_stats.get(field)
-            if not stats or stats['sigma'] == 0: z = 0
+
+            if not stats or stats['sigma'] == 0:
+                z = 0
             else:
                 if actual_col and actual_col in date_row.columns:
                     val = date_row[actual_col].values[0]
-                    z = (val - stats['mu']) / stats['sigma'] if pd.notna(val) else 0
-                else: z = 0
-            if field in lower_is_better: z = -z
+                    if pd.notna(val):
+                        z = (val - stats['mu']) / stats['sigma']
+                    else:
+                        z = 0
+                else:
+                    z = 0
+
+            if field in lower_is_better:
+                z = -z
             athlete_z_scores.append(z)
+
     max_abs_z = max([abs(z) for z in athlete_z_scores]) if athlete_z_scores else 0
     limit = max(2.5, np.ceil(max_abs_z * 2) / 2)
+
+    # 设置标签
     labels = [f + ('\n(逆)' if f in lower_is_better else '') for f in radar_fields]
     angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False).tolist()
     angles += angles[:1]
+
+    # 创建图表（高清晰度）
     fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(polar=True), dpi=150)
     plt.ylim(-limit - 1.0, limit)
+
+    # 绘制零线
     ax.plot(angles, [0] * len(angles), color='red', linewidth=2, linestyle='--', zorder=0.5)
+
+    # ========== 绘制正常范围（浅绿色背景）==========
     normal_range_lower = []
     normal_range_upper = []
+    
     for field in radar_fields:
         if field in ref_ranges:
             ranges = ref_ranges[field]
-            low_2 = ranges.get('low_2')
-            high_2 = ranges.get('high_2')
+            low_2 = ranges.get('low_2')  # 正常范围下限
+            high_2 = ranges.get('high_2')  # 正常范围上限
             stats = baseline_stats.get(field)
+            
             if pd.notna(low_2) and pd.notna(high_2) and stats and stats['sigma'] != 0:
+                # 计算正常范围对应的z值
                 z_lower = (low_2 - stats['mu']) / stats['sigma']
                 z_upper = (high_2 - stats['mu']) / stats['sigma']
-                if field in lower_is_better: z_lower, z_upper = -z_upper, -z_lower
+                
+                # 如果是逆指标，取反
+                if field in lower_is_better:
+                    z_lower, z_upper = -z_upper, -z_lower
+                
                 normal_range_lower.append(z_lower)
                 normal_range_upper.append(z_upper)
-            else: normal_range_lower.append(-1); normal_range_upper.append(1)
-        else: normal_range_lower.append(-1); normal_range_upper.append(1)
+            else:
+                # 如果没有参考范围，使用默认值
+                normal_range_lower.append(-1)
+                normal_range_upper.append(1)
+        else:
+            # 如果没有参考范围，使用默认值
+            normal_range_lower.append(-1)
+            normal_range_upper.append(1)
+    
+    # 闭合多边形
     normal_range_lower.append(normal_range_lower[0])
     normal_range_upper.append(normal_range_upper[0])
-    ax.fill_between(angles, normal_range_lower, normal_range_upper, color='#90EE90', alpha=0.2, zorder=1, label='理想范围')
-    ax.plot(angles, normal_range_lower, color='#32CD32', linewidth=1.5, linestyle=':', alpha=0.6, zorder=1)
-    ax.plot(angles, normal_range_upper, color='#32CD32', linewidth=1.5, linestyle=':', alpha=0.6, zorder=1)
+    
+    # 绘制理想范围区域（浅绿色填充）
+    ax.fill_between(angles, normal_range_lower, normal_range_upper, 
+                     color='#90EE90', alpha=0.2, zorder=1, label='理想范围')
+    
+    # 绘制理想范围边界线
+    ax.plot(angles, normal_range_lower, color='#32CD32', linewidth=1.5, 
+            linestyle=':', alpha=0.6, zorder=1)
+    ax.plot(angles, normal_range_upper, color='#32CD32', linewidth=1.5, 
+            linestyle=':', alpha=0.6, zorder=1)
+
+    # 选择样式 - 最近4次测试
     styles = RADAR_STYLES[-len(last_4_dates):]
+
+    # 绘制主运动员的最近4次数据
     for i, date in enumerate(last_4_dates):
         date_row = athlete_df[athlete_df['DateStr'] == date]
-        if date_row.empty: continue
+        if date_row.empty:
+            continue
+
         values = []
         for field in radar_fields:
             actual_col = find_indicator_column(date_row, field)
             stats = baseline_stats.get(field)
-            if not stats or stats['sigma'] == 0: z = 0
+
+            if not stats or stats['sigma'] == 0:
+                z = 0
             else:
                 if actual_col and actual_col in date_row.columns:
                     val = date_row[actual_col].values[0]
-                    z = (val - stats['mu']) / stats['sigma'] if pd.notna(val) else 0
-                else: z = 0
-            if field in lower_is_better: z = -z
+                    if pd.notna(val):
+                        z = (val - stats['mu']) / stats['sigma']
+                    else:
+                        z = 0
+                else:
+                    z = 0
+
+            if field in lower_is_better:
+                z = -z
             values.append(z)
+
         values.append(values[0])
         style = styles[i]
-        ax.plot(angles, values, color=style['color'], linewidth=style['linewidth'], linestyle=style['linestyle'], label=date, zorder=2)
-        if i == len(last_4_dates) - 1: ax.fill(angles, values, color=style['color'], alpha=0.15, zorder=3)
+
+        ax.plot(angles, values, color=style['color'], linewidth=style['linewidth'],
+                linestyle=style['linestyle'], label=date, zorder=2)
+
+        # 最新一次填充
+        if i == len(last_4_dates) - 1:
+            ax.fill(angles, values, color=style['color'], alpha=0.15, zorder=3)
+
+    # 设置坐标轴
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(labels, size=11)
+
+    # 数值刻度
     step = 1 if limit <= 3 else 2
     z_ticks = np.arange(-int(limit), int(limit) + 1, step)
     ax.set_yticks(z_ticks)
     ax.set_yticklabels([f'{i:.0f}' for i in z_ticks], color='grey', size=10)
-    plt.title(f"{athlete_name} ({gender}) - 机能状态 Z-Score 雷达图", fontsize=16, y=1.08, fontweight='bold')
+
+    plt.title(f"{athlete_name} ({gender}) - 机能状态 Z-Score 雷达图",
+              fontsize=16, y=1.08, fontweight='bold')
     plt.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
+
     plt.tight_layout()
+
     return fig
+
+# ========== 主应用 ==========
 
 def main():
     st.title("🏃 运动员血液指标分析系统")
     st.markdown("**包含：表格图、多运动员趋势对比、雷达图**")
     st.markdown("---")
+
+    # === 侧边栏 ===
     st.sidebar.header("📂 数据上传")
-    uploaded_file = st.sidebar.file_uploader("1️⃣ 上传血液数据Excel", type=['xlsx', 'xls'], help="请上传包含'月周测试指标'工作表的Excel文件", key="data_file")
+
+    # 数据文件上传
+    uploaded_file = st.sidebar.file_uploader(
+        "1️⃣ 上传血液数据Excel",
+        type=['xlsx', 'xls'],
+        help="请上传包含'月周测试指标'工作表的Excel文件",
+        key="data_file"
+    )
+
+    # 参考范围文件上传
     st.sidebar.markdown("---")
     st.sidebar.markdown("**📊 参考范围设置**")
-    use_custom_ranges = st.sidebar.checkbox("使用自定义参考范围", value=False)
+
+    use_custom_ranges = st.sidebar.checkbox(
+        "使用自定义参考范围",
+        value=False,
+        help="勾选后可上传自己的参考范围Excel文件"
+    )
+
     custom_ranges_file = None
-    if use_custom_ranges: custom_ranges_file = st.sidebar.file_uploader("2️⃣ 上传参考范围Excel", type=['xlsx', 'xls'], key="ranges_file")
-    if uploaded_file is None: st.info("👈 请在左侧上传Excel数据文件"); st.stop()
+    if use_custom_ranges:
+        custom_ranges_file = st.sidebar.file_uploader(
+            "2️⃣ 上传参考范围Excel",
+            type=['xlsx', 'xls'],
+            help="Excel文件需包含'参考范围'工作表",
+            key="ranges_file"
+        )
+
+    if uploaded_file is None:
+        st.info("👈 请在左侧上传Excel数据文件")
+        st.stop()
+
+    # === 加载参考范围 ===
     if use_custom_ranges and custom_ranges_file is not None:
         with st.spinner("正在加载自定义参考范围..."):
             male_ref_ranges, female_ref_ranges = load_reference_ranges_from_excel(custom_ranges_file)
-            if male_ref_ranges and female_ref_ranges: st.sidebar.success(f"✅ 已加载自定义范围（男:{len(male_ref_ranges)}项，女:{len(female_ref_ranges)}项）")
-            else: st.sidebar.warning("⚠️ 自定义范围加载失败，使用默认范围"); male_ref_ranges = MALE_REF_RANGES; female_ref_ranges = FEMALE_REF_RANGES
-    else: male_ref_ranges = MALE_REF_RANGES; female_ref_ranges = FEMALE_REF_RANGES;
+            if male_ref_ranges and female_ref_ranges:
+                st.sidebar.success(f"✅ 已加载自定义范围（男:{len(male_ref_ranges)}项，女:{len(female_ref_ranges)}项）")
+            else:
+                st.sidebar.warning("⚠️ 自定义范围加载失败，使用默认范围")
+                male_ref_ranges = MALE_REF_RANGES
+                female_ref_ranges = FEMALE_REF_RANGES
+    else:
+        # 使用默认范围
+        male_ref_ranges = MALE_REF_RANGES
+        female_ref_ranges = FEMALE_REF_RANGES
+        if not use_custom_ranges:
+            st.sidebar.info("ℹ️ 使用默认参考范围")
+
+    # === 数据加载 ===
     with st.spinner("正在加载数据..."):
         df = load_data_multisheet(uploaded_file)
-        if df is None: st.stop()
+
+        if df is None:
+            st.stop()
+
         df = clean_data_final(df)
-        if df is None or len(df) == 0: st.error("❌ 数据清洗后为空"); st.stop()
+
+        if df is None or len(df) == 0:
+            st.error("❌ 数据清洗后为空")
+            st.stop()
+
     st.success(f"🎉 数据准备完成：共 {len(df)} 条记录")
-    with st.expander("👀 查看数据"): st.write("**前20行：**"); st.write(df.head(20))
+
+    # === 数据预览 ===
+    with st.expander("👀 查看数据"):
+        st.write("**前20行：**")
+        st.write(df.head(20))
+
     st.markdown("---")
+
+    # === 用户选择 ===
     col1, col2 = st.columns(2)
-    with col1: gender = st.selectbox("选择性别", ["男", "女"])
-    if '性别' in df.columns: gender_df = df[df['性别'] == gender].copy()
-    else: st.warning("⚠️ 数据中没有'性别'列"); gender_df = df.copy()
-    if len(gender_df) == 0: st.warning(f"⚠️ 没有{gender}运动员的数据"); st.stop()
+
+    with col1:
+        gender = st.selectbox("选择性别", ["男", "女"])
+
+    # 筛选性别
+    if '性别' in df.columns:
+        gender_df = df[df['性别'] == gender].copy()
+    else:
+        st.warning("⚠️ 数据中没有'性别'列")
+        gender_df = df.copy()
+
+    if len(gender_df) == 0:
+        st.warning(f"⚠️ 没有{gender}运动员的数据")
+        st.stop()
+
+    # 获取运动员列表
     name_col = None
     for possible_name in ['Name_final', 'Name', '姓名']:
-        if possible_name in gender_df.columns: name_col = possible_name; break
-    if not name_col: st.error("❌ 未找到姓名列"); st.stop()
+        if possible_name in gender_df.columns:
+            name_col = possible_name
+            break
+
+    if not name_col:
+        st.error("❌ 未找到姓名列")
+        st.stop()
+
     athletes = sorted(gender_df[name_col].dropna().unique())
     ref_ranges = male_ref_ranges if gender == "男" else female_ref_ranges
-    with col2: athlete_name = st.selectbox("选择运动员", athletes, help=f"共 {len(athletes)} 名{gender}运动员")
+
+    with col2:
+        athlete_name = st.selectbox(
+            "选择运动员",
+            athletes,
+            help=f"共 {len(athletes)} 名{gender}运动员"
+        )
+
+    # 筛选运动员数据
     athlete_df = gender_df[gender_df[name_col] == athlete_name].copy()
+
     date_col = 'Date' if 'Date' in athlete_df.columns else 'Date_auto'
-    if date_col in athlete_df.columns: athlete_df = athlete_df.sort_values(date_col)
+    if date_col in athlete_df.columns:
+        athlete_df = athlete_df.sort_values(date_col)
+
     st.info(f"📊 **{athlete_name}**（{gender}）- 共 {len(athlete_df)} 次测试")
+
     st.markdown("---")
-    exclude_cols = ['Name', 'Name_final', '姓名', 'Date', 'Date_auto', '日期', 'DateStr', '性别', 'Gender', '编号', 'ID', 'Unnamed: 0']
+
+    # === 获取所有可用的数值指标 ===
+    # 排除非指标列
+    exclude_cols = ['Name', 'Name_final', '姓名', 'Date', 'Date_auto', '日期', 'DateStr', 
+                    '性别', 'Gender', '编号', 'ID', 'Unnamed: 0']
     all_numeric_indicators = []
     for col in gender_df.columns:
         if col not in exclude_cols:
+            # 检查是否是数值列
             try:
-                if gender_df[col].dtype in ['float64', 'int64'] or pd.to_numeric(gender_df[col], errors='coerce').notna().any(): all_numeric_indicators.append(col)
-            except: pass
-    if not all_numeric_indicators: all_numeric_indicators = TREND_INDICATORS
+                if gender_df[col].dtype in ['float64', 'int64'] or pd.to_numeric(gender_df[col], errors='coerce').notna().any():
+                    all_numeric_indicators.append(col)
+            except:
+                pass
+    
+    # 如果没有找到数值列，使用默认的TREND_INDICATORS
+    if not all_numeric_indicators:
+        all_numeric_indicators = TREND_INDICATORS
+
+    # === 功能选项卡 ===
     tab1, tab2, tab3, tab4 = st.tabs(["📋 主题表格", "📈 趋势对比", "🎯 雷达图", "📊 数据表"])
+
+    # --- Tab 1: 主题表格 ---
     with tab1:
         st.subheader("最新数据主题表格")
+        st.markdown("显示最新一次测试的各项指标，使用五档判断")
+
         if st.button("🚀 生成主题表格", type="primary", use_container_width=True):
             with st.spinner("正在生成表格..."):
+
                 for theme_name, categories in THEME_CONFIG.items():
                     st.markdown(f"### {theme_name.split('_')[-1]}")
                     result = plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender)
+
                     if result:
                         fig, missing = result
-                        if fig: st.pyplot(fig); plt.close()
-                        else: st.info(f"ℹ️ {theme_name} 数据不足")
-                    else: st.info(f"ℹ️ {theme_name} 数据不足")
+                        if fig:
+                            st.pyplot(fig)
+                            plt.close()
+                        else:
+                            st.info(f"ℹ️ {theme_name} 数据不足")
+                    else:
+                        st.info(f"ℹ️ {theme_name} 数据不足")
+
                 st.success("✅ 表格生成完成！")
+
+    # --- Tab 2: 趋势对比 ---
     with tab2:
         st.subheader("多运动员趋势对比")
-        compare_athletes = st.multiselect("选择对比运动员（可多选）", athletes, default=[athlete_name])
+        st.markdown("可以选择多个运动员和日期范围进行对比")
+
+        # 选择对比运动员
+        compare_athletes = st.multiselect(
+            "选择对比运动员（可多选）",
+            athletes,
+            default=[athlete_name],
+            help="选择要对比的运动员"
+        )
+
+        # 日期范围选择
         if date_col in gender_df.columns:
             min_date = gender_df[date_col].min()
             max_date = gender_df[date_col].max()
-            date_range = st.date_input("选择日期范围", value=(min_date, max_date), min_value=min_date, max_value=max_date)
-        else: date_range = None
+
+            date_range = st.date_input(
+                "选择日期范围",
+                value=(min_date, max_date),
+                min_value=min_date,
+                max_value=max_date,
+                help="选择要分析的日期范围"
+            )
+        else:
+            date_range = None
+
+        # 选择指标
+        # 构建默认选择：优先使用TREND_INDICATORS中存在于数据的指标
         default_trend = [ind for ind in TREND_INDICATORS if ind in all_numeric_indicators]
-        if not default_trend and all_numeric_indicators: default_trend = all_numeric_indicators[:3] if len(all_numeric_indicators) >= 3 else all_numeric_indicators
-        selected_indicators = st.multiselect("选择要分析的指标", all_numeric_indicators, default=default_trend)
+        if not default_trend and all_numeric_indicators:
+            # 如果TREND_INDICATORS中的指标都不在数据中，使用前3个
+            default_trend = all_numeric_indicators[:3] if len(all_numeric_indicators) >= 3 else all_numeric_indicators
+        
+        selected_indicators = st.multiselect(
+            "选择要分析的指标",
+            all_numeric_indicators,
+            default=default_trend,
+            help="选择要绘制趋势图的指标（可选择所有数值指标）"
+        )
+
         if st.button("🚀 生成趋势对比图", type="primary", use_container_width=True):
-            if not compare_athletes: st.warning("⚠️ 请至少选择一个运动员")
-            elif not selected_indicators: st.warning("⚠️ 请至少选择一个指标")
+            if not compare_athletes:
+                st.warning("⚠️ 请至少选择一个运动员")
+            elif not selected_indicators:
+                st.warning("⚠️ 请至少选择一个指标")
             else:
                 with st.spinner("正在生成趋势图..."):
                     for indicator in selected_indicators:
                         st.markdown(f"### {indicator}")
-                        fig = plot_trend_chart_multi(gender_df, indicator, ref_ranges, compare_athletes, date_range, gender)
-                        if fig: st.pyplot(fig); plt.close()
-                        else: st.info(f"ℹ️ {indicator} 数据不足")
+                        fig = plot_trend_chart_multi(
+                            gender_df, indicator, ref_ranges,
+                            compare_athletes, date_range, gender
+                        )
+                        if fig:
+                            st.pyplot(fig)
+                            plt.close()
+                        else:
+                            st.info(f"ℹ️ {indicator} 数据不足")
+
                     st.success("✅ 趋势图生成完成！")
+
+    # --- Tab 3: 雷达图 ---
     with tab3:
         st.subheader(f"{athlete_name}的机能状态雷达图")
+        st.markdown(f"显示**{athlete_name}**最近4次测试的Z-Score雷达图")
+
+        # 说明Z-Score计算方式
         st.info("💡 **Z-Score计算说明**：使用对比运动员组的数据作为基准，计算该运动员相对于组内的表现")
-        radar_athletes = st.multiselect("选择对比运动员组（用于计算Z-Score基准）", athletes, default=[athlete_name], key="radar_athletes")
+
+        # 选择对比运动员组（用于计算baseline）
+        radar_athletes = st.multiselect(
+            "选择对比运动员组（用于计算Z-Score基准）",
+            athletes,
+            default=[athlete_name],
+            help="选择的运动员将作为基准组，用于计算Z-Score的均值和标准差",
+            key="radar_athletes"
+        )
+
+        # 选择雷达图指标
+        # 构建默认选择：优先使用RADAR_FIELDS中存在于数据的指标
         default_radar = [ind for ind in RADAR_FIELDS if ind in all_numeric_indicators]
-        if not default_radar and all_numeric_indicators: default_radar = all_numeric_indicators[:8] if len(all_numeric_indicators) >= 8 else all_numeric_indicators
-        radar_indicators = st.multiselect("选择雷达图指标", all_numeric_indicators, default=default_radar)
+        if not default_radar and all_numeric_indicators:
+            # 如果RADAR_FIELDS中的指标都不在数据中，使用前8个
+            default_radar = all_numeric_indicators[:8] if len(all_numeric_indicators) >= 8 else all_numeric_indicators
+        
+        radar_indicators = st.multiselect(
+            "选择雷达图指标",
+            all_numeric_indicators,
+            default=default_radar,
+            help="选择要在雷达图中显示的指标（建议4-10个，可选择所有数值指标）"
+        )
+
+        # 选择逆指标（值越低越好的指标）
         st.markdown("**逆指标设置**（值越低越好的指标）")
-        lower_better = st.multiselect("选择逆指标", radar_indicators, default=[ind for ind in LOWER_IS_BETTER if ind in radar_indicators])
+        lower_better = st.multiselect(
+            "选择逆指标",
+            radar_indicators,
+            default=[ind for ind in LOWER_IS_BETTER if ind in radar_indicators],
+            help="这些指标在雷达图中会取反（如肌酸激酶、血尿素等）"
+        )
+
         if st.button("🚀 生成雷达图", type="primary", use_container_width=True, key="radar_btn"):
-            if not radar_athletes: st.warning("⚠️ 请至少选择一个对比运动员")
-            elif not radar_indicators: st.warning("⚠️ 请至少选择一个指标")
-            elif len(radar_indicators) < 3: st.warning("⚠️ 请至少选择3个指标，雷达图效果更好")
+            if not radar_athletes:
+                st.warning("⚠️ 请至少选择一个对比运动员")
+            elif not radar_indicators:
+                st.warning("⚠️ 请至少选择一个指标")
+            elif len(radar_indicators) < 3:
+                st.warning("⚠️ 请至少选择3个指标，雷达图效果更好")
             else:
                 with st.spinner("正在生成雷达图..."):
+                    # 获取对比运动员组的最近4次数据（用于计算baseline）
                     baseline_data_list = []
                     for comp_athlete in radar_athletes:
                         comp_athlete_df = gender_df[gender_df[name_col] == comp_athlete].sort_values('Date')
-                        if not comp_athlete_df.empty: last_4 = comp_athlete_df.tail(4); baseline_data_list.append(last_4)
+                        if not comp_athlete_df.empty:
+                            # 获取该运动员的最近4次数据
+                            last_4 = comp_athlete_df.tail(4)
+                            baseline_data_list.append(last_4)
+
                     if baseline_data_list:
                         baseline_df = pd.concat(baseline_data_list, ignore_index=True)
-                        fig = plot_radar_chart_with_baseline(athlete_df, radar_indicators, lower_better, ref_ranges, athlete_name, baseline_df, gender)
-                        if fig: st.pyplot(fig); plt.close(); st.success("✅ 雷达图生成完成！")
-                        else: st.info("ℹ️ 数据不足，无法生成雷达图")
-                    else: st.warning("⚠️ 对比运动员组没有足够的数据")
+
+                        # 生成雷达图：只画主运动员的近4次，但用baseline_df计算Z值
+                        fig = plot_radar_chart_with_baseline(
+                            athlete_df, radar_indicators, lower_better,
+                            ref_ranges, athlete_name, baseline_df, gender
+                        )
+
+                        if fig:
+                            st.pyplot(fig)
+                            plt.close()
+                            st.success("✅ 雷达图生成完成！")
+
+                            # 添加说明
+                            st.markdown("---")
+                            st.markdown("### 📖 雷达图说明")
+                            st.markdown(f"""
+                            - **显示内容**：{athlete_name}的最近4次测试
+                            - **对比基准**：使用{len(radar_athletes)}个运动员的最近4次数据计算均值和标准差
+                            - **Z-Score含义**：
+                              - **0**：等于基准组平均水平
+                              - **正值**：高于基准组平均水平
+                              - **负值**：低于基准组平均水平
+                            - **逆指标**：标记"(逆)"的指标已取反显示（值越低越好）
+                            - **线条样式**：
+                              - 蓝色虚点线：第1次测试
+                              - 橙色点划线：第2次测试
+                              - 绿色虚线：第3次测试
+                              - 红色实线+填充：第4次测试（最新）
+                            - **解读要点**：图形越向外，表现越好；图形越规则，机能越均衡
+                            """)
+                        else:
+                            st.info("ℹ️ 数据不足，无法生成雷达图")
+                    else:
+                        st.warning("⚠️ 对比运动员组没有足够的数据")
+
+    # --- Tab 4: 数据表 ---
     with tab4:
         st.subheader("完整数据表")
         st.write(athlete_df)
+
         try:
             csv = athlete_df.to_csv(index=False, encoding='utf-8-sig')
-            st.download_button(label="📥 下载CSV数据", data=csv, file_name=f"{athlete_name}_数据.csv", mime="text/csv")
-        except: st.warning("CSV下载功能暂时不可用")
+            st.download_button(
+                label="📥 下载CSV数据",
+                data=csv,
+                file_name=f"{athlete_name}_数据.csv",
+                mime="text/csv"
+            )
+        except:
+            st.warning("CSV下载功能暂时不可用")
 
 if __name__ == "__main__":
     main()
