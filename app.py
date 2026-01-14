@@ -202,6 +202,18 @@ st.set_page_config(
 # 主题配置 - 用于表格图
 # 新的主题配置 - 7个生理系统分类
 # 格式: '指标key': ('中文名', '英文名')
+
+# 一级分类中英文对照
+CATEGORY_NAMES = {
+    '1_调控与指挥中心': ('调控与指挥中心（神经-内分泌系统）', 'Control and Command Center (Neuroendocrine System)'),
+    '2_执行与代谢系统': ('执行与代谢系统（肌肉与能量状态）', 'Execution and Metabolic System (Muscle and Energy Status)'),
+    '3_循环与运载系统': ('循环与运载系统（血液运载能力）', 'Circulation and Transport System (Blood Transport Capacity)'),
+    '4_后勤保障与维护': ('后勤保障与维护（免疫与内环境）', 'Logistics Support and Maintenance (Immunity and Internal Environment)'),
+    '5_甲状腺功能': ('甲状腺功能', 'Thyroid Function'),
+    '6_肝脏功能': ('肝脏功能', 'Liver Function'),
+    '7_血脂': ('血脂', 'Blood Lipids'),
+}
+
 THEME_CONFIG = {
     '1_调控与指挥中心': {
         '合成代谢\nAnabolism': {
@@ -451,12 +463,55 @@ def get_indicator_status(indicator, value, ref_ranges):
 
 # 指标别名映射（用于处理常见的名称差异）
 INDICATOR_ALIASES = {
+    # 红细胞指标
     '平均红细胞血红蛋白浓度': ['平均红细胞血红浓度', 'MCHC', '平均血红蛋白浓度'],
     '平均红细胞血红蛋白': ['平均红细胞血红蛋白量', 'MCH'],
     '平均红细胞体积': ['平均红细胞容积', 'MCV'],
+    '平均红细胞容积': ['平均红细胞体积', 'MCV'],
     '平均血红蛋白浓度': ['平均红细胞血红蛋白浓度', 'MCHC'],
-    '超敏C反应蛋白': ['C反应蛋白', 'CRP', 'hsCRP', 'hs-CRP'],
     '网织红细胞百分比': ['网织红细胞', 'retic', 'Retic'],
+    
+    # 炎症指标
+    '超敏C反应蛋白': ['C反应蛋白', 'CRP', 'hsCRP', 'hs-CRP'],
+    
+    # 维生素指标（季度测试）
+    '维生素B1': ['VB1', 'VitB1'],
+    '维生素B2': ['VB2', 'VitB2'],
+    '维生素B6': ['VB6', 'VitB6', 'VitB6(PA)', 'vitB6（PLP）'],
+    '维生素B12': ['VB12', 'VitB12'],
+    '叶酸': ['FOL', '维生素B9'],
+    '维生素D3': ['VD3', 'VD3(25-OH)', 'VD-(25-OH)'],
+    
+    # 电解质（季度测试）
+    '钾': ['K'],
+    '钠': ['Na'],
+    '氯': ['Cl'],
+    '钙': ['Ca'],
+    '镁': ['Mg'],
+    
+    # 甲状腺功能（年度测试）
+    '总甲状腺素': ['T4', 'TT4'],
+    '总三碘甲状腺原氨酸': ['T3', 'TT3'],
+    '游离三碘甲状原氨酸': ['FT3', '游离T3'],
+    '游离甲状腺素': ['FT4', '游离T4'],
+    '超敏促甲状腺素': ['TSH', 'hs-TSH', '促甲状腺激素'],
+    
+    # 肝功能（年度测试）
+    '丙氨酸氨基转移酶': ['ALT', '谷丙转氨酶', '丙氨酸基转移酶'],
+    '天冬氨酸氨基转移酶': ['AST', '谷草转氨酶'],
+    '碱性磷酸酶': ['ALP'],
+    'γ-谷氨酰基转移酶': ['GGT', 'γ-GT', 'γ-谷氨酰转移酶'],
+    '总胆红素': ['TBIL', 'TB'],
+    '直接胆红素': ['DBIL', 'DB'],
+    '间接胆红素': ['IBIL', 'IB'],
+    '总蛋白': ['TP'],
+    '白蛋白': ['ALB', 'Alb'],
+    
+    # 血脂（年度测试）
+    '甘油三酯': ['TG', 'TAG'],
+    '高密度脂蛋白': ['HDL', 'HDL-C'],
+    '总胆固醇': ['TC', 'CHOL'],
+    '低密度脂蛋白': ['LDL', 'LDL-C'],
 }
 
 def find_indicator_column(df, indicator):
@@ -574,12 +629,14 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
     cell_colors = []
     missing_indicators = []  # 记录缺失的指标
 
-    # 状态中英文对照
+    # 状态中英文对照（包含优秀、良好等）
     status_translation = {
         '严重偏低': ('严重偏低', 'Severely Low'),
         '偏低': ('偏低', 'Low'),
         '正常': ('正常', 'Normal'),
+        '良好': ('良好', 'Good'),
         '偏高': ('偏高', 'High'),
+        '优秀': ('优秀', 'Excellent'),
         '严重偏高': ('严重偏高', 'Severely High'),
         '-': ('—', '—'),  # 无数据或未找到
         'N/A': ('—', '—'),  # 保留兼容
@@ -587,7 +644,7 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
     }
 
     for category_title, indicators in categories.items():
-        # 添加分类标题行（4列）
+        # 添加分类标题行（4列）- 居中对齐
         cell_text.append([category_title, '', '', ''])
         cell_colors.append([COLOR_CATEGORY_HEADER, COLOR_CATEGORY_HEADER, COLOR_CATEGORY_HEADER, COLOR_CATEGORY_HEADER])
 
@@ -595,46 +652,89 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
             # name_tuple是(中文名, 英文名)
             cn_name, en_name = name_tuple
             
-            # 查找实际的列名
-            actual_col = find_indicator_column(athlete_df, col_key)
-
-            # 获取正常范围
-            range_str = "—"
-            if col_key in ref_ranges:
-                ranges = ref_ranges[col_key]
-                low_2 = ranges.get('low_2')
-                high_2 = ranges.get('high_2')
-
-                if pd.notna(low_2) and pd.notna(high_2):
-                    # 两个值都存在，显示范围
-                    range_str = f"{low_2:.1f}-{high_2:.1f}"
-                elif pd.notna(low_2):
-                    # 只有下限
-                    range_str = f"≥{low_2:.1f}"
-                elif pd.notna(high_2):
-                    # 只有上限
-                    range_str = f"≤{high_2:.1f}"
-
-            if actual_col and actual_col in latest_row.index:
-                val = latest_row[actual_col]
-                status, bg_color, _ = get_indicator_status(col_key, val, ref_ranges)
-
-                if pd.notna(val):
-                    if abs(val) >= 1000:
-                        val_str = f"{val:.0f}"
-                    elif abs(val) >= 100:
-                        val_str = f"{val:.1f}"
-                    else:
+            # 特殊处理：睾酮/皮质醇比值需要计算
+            if col_key == '睾酮/皮质醇比值':
+                # 查找睾酮和皮质醇
+                testosterone_col = find_indicator_column(athlete_df, '睾酮')
+                cortisol_col = find_indicator_column(athlete_df, '皮质醇')
+                
+                if testosterone_col and cortisol_col and \
+                   testosterone_col in latest_row.index and cortisol_col in latest_row.index:
+                    t_val = latest_row[testosterone_col]
+                    c_val = latest_row[cortisol_col]
+                    
+                    if pd.notna(t_val) and pd.notna(c_val) and c_val != 0:
+                        # 计算比值
+                        val = t_val / c_val
                         val_str = f"{val:.2f}"
+                        
+                        # 判断状态（这里需要根据参考范围判断）
+                        status, bg_color, _ = get_indicator_status(col_key, val, ref_ranges)
+                    else:
+                        val_str = "—"
+                        status = "-"
+                        bg_color = '#F8F8F8'
                 else:
                     val_str = "—"
-                    status = "-"  # 无数据显示为"-"
+                    status = "-"
                     bg_color = '#F8F8F8'
+                    missing_indicators.append((col_key, f"{cn_name}/{en_name}"))
+                
+                # 获取正常范围
+                range_str = "—"
+                if col_key in ref_ranges:
+                    ranges = ref_ranges[col_key]
+                    low_2 = ranges.get('low_2')
+                    high_2 = ranges.get('high_2')
+                    
+                    if pd.notna(low_2) and pd.notna(high_2):
+                        range_str = f"{low_2:.1f}-{high_2:.1f}"
+                    elif pd.notna(low_2):
+                        range_str = f"≥{low_2:.1f}"
+                    elif pd.notna(high_2):
+                        range_str = f"≤{high_2:.1f}"
             else:
-                val_str = "—"
-                status = "-"  # 未找到显示为"-"
-                bg_color = '#F8F8F8'  # 浅灰色背景
-                missing_indicators.append((col_key, f"{cn_name}/{en_name}"))
+                # 普通指标处理
+                # 查找实际的列名
+                actual_col = find_indicator_column(athlete_df, col_key)
+
+                # 获取正常范围
+                range_str = "—"
+                if col_key in ref_ranges:
+                    ranges = ref_ranges[col_key]
+                    low_2 = ranges.get('low_2')
+                    high_2 = ranges.get('high_2')
+
+                    if pd.notna(low_2) and pd.notna(high_2):
+                        # 两个值都存在，显示范围
+                        range_str = f"{low_2:.1f}-{high_2:.1f}"
+                    elif pd.notna(low_2):
+                        # 只有下限
+                        range_str = f"≥{low_2:.1f}"
+                    elif pd.notna(high_2):
+                        # 只有上限
+                        range_str = f"≤{high_2:.1f}"
+
+                if actual_col and actual_col in latest_row.index:
+                    val = latest_row[actual_col]
+                    status, bg_color, _ = get_indicator_status(col_key, val, ref_ranges)
+
+                    if pd.notna(val):
+                        if abs(val) >= 1000:
+                            val_str = f"{val:.0f}"
+                        elif abs(val) >= 100:
+                            val_str = f"{val:.1f}"
+                        else:
+                            val_str = f"{val:.2f}"
+                    else:
+                        val_str = "—"
+                        status = "-"  # 无数据显示为"-"
+                        bg_color = '#F8F8F8'
+                else:
+                    val_str = "—"
+                    status = "-"  # 未找到显示为"-"
+                    bg_color = '#F8F8F8'  # 浅灰色背景
+                    missing_indicators.append((col_key, f"{cn_name}/{en_name}"))
 
             # 构建双行文本
             indicator_text = f"{cn_name}\n{en_name}"
@@ -674,7 +774,7 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
             cell.set_text_props(weight='bold', color='white', fontsize=9)
             cell.set_edgecolor('white')
         elif cell.get_facecolor() == COLOR_CATEGORY_HEADER:  # 分类标题
-            cell.set_text_props(weight='bold', color='white', ha='left', fontsize=11)
+            cell.set_text_props(weight='bold', color='white', ha='center', fontsize=11)  # 改为居中
             cell.set_edgecolor('white')
         else:  # 数据行
             cell.set_edgecolor('#DDDDDD')
@@ -685,9 +785,15 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
             elif r > 0 and c == 3:  # 评价列
                 cell.set_text_props(fontsize=8.5)
 
-    theme_display = theme_name.split('_')[-1]
-    plt.title(f"{athlete_name} ({gender}) - {theme_display} ({latest_date})",
-              y=0.99, fontsize=14, fontweight='bold')
+    # 获取中英文标题
+    if theme_name in CATEGORY_NAMES:
+        cn_title, en_title = CATEGORY_NAMES[theme_name]
+        title_text = f"{athlete_name} ({gender}) - {cn_title}\n{en_title} ({latest_date})"
+    else:
+        theme_display = theme_name.split('_')[-1]
+        title_text = f"{athlete_name} ({gender}) - {theme_display} ({latest_date})"
+    
+    plt.title(title_text, y=0.99, fontsize=13, fontweight='bold')
 
     plt.tight_layout()
 
