@@ -641,77 +641,6 @@ def merge_sheet_data(df_main, df_add, name_col, date_col, sheet_name):
 
 
 
-def get_indicator_status(indicator, value, ref_ranges):
-    """判断指标状态（五档）- 完全修复版"""
-    # 先检查是否为NaN
-    if indicator not in ref_ranges or pd.isna(value):
-        return '数据缺失', '#F0F8FF', 'N/A'
-    
-    # 🔧 修复：转换value为数值类型
-    try:
-        if isinstance(value, str):
-            # 移除可能的空格和特殊字符
-            value = value.strip()
-            if value == '' or value == '-' or value.lower() == 'nan':
-                return '数据缺失', '#F0F8FF', 'N/A'
-            value = float(value)
-        elif not isinstance(value, (int, float)):
-            # 如果不是字符串也不是数字，尝试转换
-            value = float(value)
-    except (ValueError, TypeError):
-        # 如果无法转换，返回数据缺失
-        return '数据缺失', '#F0F8FF', 'N/A'
-
-    ranges = ref_ranges[indicator]
-    
-    # 🔧 新增：确保参考范围值也是数值类型
-    try:
-        low_1 = ranges.get('low_1')
-        low_2 = ranges.get('low_2')
-        high_2 = ranges.get('high_2')
-        high_1 = ranges.get('high_1')
-        
-        # 转换参考范围值为浮点数
-        if low_1 is not None and not isinstance(low_1, (int, float)):
-            low_1 = float(low_1) if not pd.isna(low_1) else None
-        if low_2 is not None and not isinstance(low_2, (int, float)):
-            low_2 = float(low_2) if not pd.isna(low_2) else None
-        if high_2 is not None and not isinstance(high_2, (int, float)):
-            high_2 = float(high_2) if not pd.isna(high_2) else None
-        if high_1 is not None and not isinstance(high_1, (int, float)):
-            high_1 = float(high_1) if not pd.isna(high_1) else None
-            
-    except (ValueError, TypeError) as e:
-        # 参考范围值有问题
-        return '数据缺失', '#F0F8FF', 'N/A'
-
-    # 高优指标列表（高于正常范围是好事）
-    high_is_better_indicators = ['铁蛋白', '血红蛋白', '睾酮', '游离睾酮']
-
-    # 判断状态
-    try:
-        if pd.notna(low_1) and value < low_1:
-            return '严重偏低', COLOR_SEVERE_LOW, 'severe_low'
-        elif pd.notna(low_2) and value < low_2:
-            return '偏低', COLOR_LOW, 'low'
-        elif pd.notna(high_1) and value > high_1:
-            # 判断是否是高优指标
-            if indicator in high_is_better_indicators:
-                return '优秀', COLOR_SEVERE_HIGH, 'excellent'
-            else:
-                return '严重偏高', COLOR_SEVERE_HIGH, 'severe_high'
-        elif pd.notna(high_2) and value > high_2:
-            # 判断是否是高优指标
-            if indicator in high_is_better_indicators:
-                return '良好', COLOR_HIGH, 'good'
-            else:
-                return '偏高', COLOR_HIGH, 'high'
-        else:
-            return '正常', COLOR_NORMAL, 'normal'
-    except (TypeError, ValueError) as e:
-        # 比较时仍有问题
-        return '数据缺失', '#F0F8FF', 'N/A'
-
 def clean_data_final(df):
     """数据清洗函数"""
     if df is None:
@@ -771,37 +700,68 @@ def clean_data_final(df):
 # ========== 辅助函数 ==========
 
 def get_indicator_status(indicator, value, ref_ranges):
-    """判断指标状态（五档）"""
+    """判断指标状态（五档）- 完全修复版"""
+    # 先检查是否为NaN
     if indicator not in ref_ranges or pd.isna(value):
+        return '数据缺失', '#F0F8FF', 'N/A'
+    
+    # 🔧 修复1：转换value为数值类型
+    try:
+        if isinstance(value, str):
+            value = value.strip()
+            if value == '' or value == '-' or value.lower() == 'nan':
+                return '数据缺失', '#F0F8FF', 'N/A'
+            value = float(value)
+        elif not isinstance(value, (int, float)):
+            value = float(value)
+    except (ValueError, TypeError):
         return '数据缺失', '#F0F8FF', 'N/A'
 
     ranges = ref_ranges[indicator]
-    low_1 = ranges.get('low_1')
-    low_2 = ranges.get('low_2')
-    high_2 = ranges.get('high_2')
-    high_1 = ranges.get('high_1')
+    
+    # 🔧 修复2：确保参考范围值也是数值类型
+    try:
+        low_1 = ranges.get('low_1')
+        low_2 = ranges.get('low_2')
+        high_2 = ranges.get('high_2')
+        high_1 = ranges.get('high_1')
+        
+        # 转换参考范围值为浮点数
+        if low_1 is not None and not isinstance(low_1, (int, float)):
+            low_1 = float(low_1) if not pd.isna(low_1) else None
+        if low_2 is not None and not isinstance(low_2, (int, float)):
+            low_2 = float(low_2) if not pd.isna(low_2) else None
+        if high_2 is not None and not isinstance(high_2, (int, float)):
+            high_2 = float(high_2) if not pd.isna(high_2) else None
+        if high_1 is not None and not isinstance(high_1, (int, float)):
+            high_1 = float(high_1) if not pd.isna(high_1) else None
+    except (ValueError, TypeError):
+        return '数据缺失', '#F0F8FF', 'N/A'
 
     # 高优指标列表（高于正常范围是好事）
     high_is_better_indicators = ['铁蛋白', '血红蛋白', '睾酮', '游离睾酮']
 
-    if pd.notna(low_1) and value < low_1:
-        return '严重偏低', COLOR_SEVERE_LOW, 'severe_low'
-    elif pd.notna(low_2) and value < low_2:
-        return '偏低', COLOR_LOW, 'low'
-    elif pd.notna(high_1) and value > high_1:
-        # 判断是否是高优指标
-        if indicator in high_is_better_indicators:
-            return '优秀', COLOR_SEVERE_HIGH, 'excellent'
+    # 🔧 修复3：判断状态时添加异常保护
+    try:
+        if pd.notna(low_1) and value < low_1:
+            return '严重偏低', COLOR_SEVERE_LOW, 'severe_low'
+        elif pd.notna(low_2) and value < low_2:
+            return '偏低', COLOR_LOW, 'low'
+        elif pd.notna(high_1) and value > high_1:
+            if indicator in high_is_better_indicators:
+                return '优秀', COLOR_SEVERE_HIGH, 'excellent'
+            else:
+                return '严重偏高', COLOR_SEVERE_HIGH, 'severe_high'
+        elif pd.notna(high_2) and value > high_2:
+            if indicator in high_is_better_indicators:
+                return '良好', COLOR_HIGH, 'good'
+            else:
+                return '偏高', COLOR_HIGH, 'high'
         else:
-            return '严重偏高', COLOR_SEVERE_HIGH, 'severe_high'
-    elif pd.notna(high_2) and value > high_2:
-        # 判断是否是高优指标
-        if indicator in high_is_better_indicators:
-            return '良好', COLOR_HIGH, 'good'
-        else:
-            return '偏高', COLOR_HIGH, 'high'
-    else:
-        return '正常', COLOR_NORMAL, 'normal'
+            return '正常', COLOR_NORMAL, 'normal'
+    except (TypeError, ValueError):
+        return '数据缺失', '#F0F8FF', 'N/A'
+
 
 # 指标别名映射（用于处理常见的名称差异）
 INDICATOR_ALIASES = {
