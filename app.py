@@ -424,36 +424,52 @@ def load_data_multisheet(file_path_or_buffer):
 def flatten_multiindex_columns(df, sheet_name):
     """
     将双层MultiIndex列名展平为单层
-    确保所有列名唯一
+    优先使用具体的指标名称
     """
+    # 定义分类名称（这些应该跳过，使用level1）
+    category_names = ['维生素', '电解质', '甲功', '肝功', '血脂四项', '糖类指标', '性别']
+    
+    # 定义基础信息列名（这些应该保留level0）
+    basic_info_cols = ['项目', '编号', '姓名', '出生年月日', '身高', '体重', '测试日期', '备注']
+    
     new_columns = []
     
     for col in df.columns:
         if isinstance(col, tuple):
-            # 双层列名
             level0, level1 = col[0], col[1]
             
-            # 如果第0层是有效的列名（项目、姓名、测试日期等），优先使用
-            if not (pd.isna(level0) or str(level0).startswith('Unnamed')):
-                # 基础信息列
+            # 判断逻辑：
+            # 1. 如果level0是基础信息列，使用level0
+            # 2. 如果level0是分类名称，使用level1（指标名）
+            # 3. 如果level1是Unnamed，使用level0
+            # 4. 否则优先使用level1
+            
+            if str(level0) in basic_info_cols:
+                # 基础信息列：使用level0
                 col_name = str(level0)
-            # 否则使用第1层
-            elif not (pd.isna(level1) or str(level1).startswith('Unnamed')):
-                # 指标列
-                col_name = str(level1)
+            elif str(level0) in category_names:
+                # 分类名称：使用level1（实际指标名）
+                if not (pd.isna(level1) or str(level1).startswith('Unnamed')):
+                    col_name = str(level1)
+                else:
+                    col_name = f'Unnamed_{len(new_columns)}'
+            elif pd.isna(level1) or str(level1).startswith('Unnamed'):
+                # level1无效：使用level0
+                if not (pd.isna(level0) or str(level0).startswith('Unnamed')):
+                    col_name = str(level0)
+                else:
+                    col_name = f'Unnamed_{len(new_columns)}'
             else:
-                # 都是无效的，使用Unnamed
-                col_name = f'Unnamed_{len(new_columns)}'
+                # 其他情况：优先使用level1
+                col_name = str(level1)
         else:
-            # 单层列名
             col_name = str(col)
         
         new_columns.append(col_name)
     
-    # 🔧 关键修复：确保列名唯一
     df.columns = new_columns
     
-    # 处理重复的列名
+    # 🔧 确保列名唯一
     seen = {}
     unique_columns = []
     for col in df.columns:
@@ -703,19 +719,19 @@ def get_indicator_status(indicator, value, ref_ranges):
     """判断指标状态（五档）- 完全修复版"""
     # 先检查是否为NaN
     if indicator not in ref_ranges or pd.isna(value):
-        return '数据缺失', '#F0F8FF', 'N/A'
+        return '-', '#F0F8FF', 'N/A'
     
     # 🔧 修复1：转换value为数值类型
     try:
         if isinstance(value, str):
             value = value.strip()
             if value == '' or value == '-' or value.lower() == 'nan':
-                return '数据缺失', '#F0F8FF', 'N/A'
+                return '-', '#F0F8FF', 'N/A'
             value = float(value)
         elif not isinstance(value, (int, float)):
             value = float(value)
     except (ValueError, TypeError):
-        return '数据缺失', '#F0F8FF', 'N/A'
+        return '-', '#F0F8FF', 'N/A'
 
     ranges = ref_ranges[indicator]
     
@@ -736,7 +752,7 @@ def get_indicator_status(indicator, value, ref_ranges):
         if high_1 is not None and not isinstance(high_1, (int, float)):
             high_1 = float(high_1) if not pd.isna(high_1) else None
     except (ValueError, TypeError):
-        return '数据缺失', '#F0F8FF', 'N/A'
+        return '-', '#F0F8FF', 'N/A'
 
     # 高优指标列表（高于正常范围是好事）
     high_is_better_indicators = ['铁蛋白', '血红蛋白', '睾酮', '游离睾酮']
@@ -760,7 +776,7 @@ def get_indicator_status(indicator, value, ref_ranges):
         else:
             return '正常', COLOR_NORMAL, 'normal'
     except (TypeError, ValueError):
-        return '数据缺失', '#F0F8FF', 'N/A'
+        return '-', '#F0F8FF', 'N/A'
 
 
 # 指标别名映射（用于处理常见的名称差异）
