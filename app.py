@@ -424,8 +424,7 @@ def load_data_multisheet(file_path_or_buffer):
 def flatten_multiindex_columns(df, sheet_name):
     """
     将双层MultiIndex列名展平为单层
-    第0层：基础信息列（项目、姓名、测试日期等）保留
-    第1层：指标列（维生素B12等）保留
+    确保所有列名唯一
     """
     new_columns = []
     
@@ -437,19 +436,36 @@ def flatten_multiindex_columns(df, sheet_name):
             # 如果第0层是有效的列名（项目、姓名、测试日期等），优先使用
             if not (pd.isna(level0) or str(level0).startswith('Unnamed')):
                 # 基础信息列
-                new_columns.append(str(level0))
+                col_name = str(level0)
             # 否则使用第1层
             elif not (pd.isna(level1) or str(level1).startswith('Unnamed')):
                 # 指标列
-                new_columns.append(str(level1))
+                col_name = str(level1)
             else:
                 # 都是无效的，使用Unnamed
-                new_columns.append(f'Unnamed_{len(new_columns)}')
+                col_name = f'Unnamed_{len(new_columns)}'
         else:
             # 单层列名
-            new_columns.append(str(col))
+            col_name = str(col)
+        
+        new_columns.append(col_name)
     
+    # 🔧 关键修复：确保列名唯一
     df.columns = new_columns
+    
+    # 处理重复的列名
+    seen = {}
+    unique_columns = []
+    for col in df.columns:
+        if col in seen:
+            seen[col] += 1
+            unique_columns.append(f"{col}_{seen[col]}")
+        else:
+            seen[col] = 0
+            unique_columns.append(col)
+    
+    df.columns = unique_columns
+    
     return df
 
 
@@ -508,6 +524,22 @@ def merge_sheet_data(df_main, df_add, name_col, date_col, sheet_name):
     将额外sheet的数据合并到主数据框
     """
     try:
+        # 🔧 新增：检查df_add是否有重复列名
+        if df_add.columns.duplicated().any():
+            st.warning(f"   ⚠ {sheet_name}：发现重复列名，正在修复...")
+            # 修复重复列名
+            seen = {}
+            unique_columns = []
+            for col in df_add.columns:
+                if col in seen:
+                    seen[col] += 1
+                    unique_columns.append(f"{col}_{seen[col]}")
+                else:
+                    seen[col] = 0
+                    unique_columns.append(col)
+            df_add.columns = unique_columns
+            st.write(f"   ✓ 列名已唯一化")
+        
         # 在额外sheet中找到对应的姓名和日期列
         name_col_add = None
         for col_name in ['姓名', 'Name', 'Name_final']:
@@ -523,15 +555,14 @@ def merge_sheet_data(df_main, df_add, name_col, date_col, sheet_name):
         
         if not name_col_add:
             st.warning(f"   ⚠ {sheet_name}：无法找到姓名列，跳过合并")
-            st.write(f"   可用列: {', '.join(df_add.columns[:10].tolist())}...")
             return df_main
             
         if not date_col_add:
             st.warning(f"   ⚠ {sheet_name}：无法找到日期列，跳过合并")
-            st.write(f"   可用列: {', '.join(df_add.columns[:10].tolist())}...")
             return df_main
         
-        # 创建合并键
+        # 创建合并键（使用.copy()避免SettingWithCopyWarning）
+        df_add = df_add.copy()
         df_add['_merge_key'] = (
             df_add[name_col_add].astype(str) + '_' + 
             df_add[date_col_add].astype(str)
@@ -554,16 +585,49 @@ def merge_sheet_data(df_main, df_add, name_col, date_col, sheet_name):
                 continue
             indicator_cols.append(col)
         
+        if len(indicator_cols) == 0:
+            st.warning(f"   ⚠ {sheet_name}：没有找到指标列，跳过合并")
+            return df_main
+        
         # 只保留指标列和合并键
         df_add_indicators = df_add[['_merge_key'] + indicator_cols].copy()
+        
+        # 🔧 新增：检查df_add_indicators是否有重复列名
+        if df_add_indicators.columns.duplicated().any():
+            st.warning(f"   ⚠ {sheet_name}：指标列有重复，正在去重...")
+            # 再次确保唯一性
+            seen = {}
+            unique_columns = []
+            for col in df_add_indicators.columns:
+                if col in seen:
+                    seen[col] += 1
+                    unique_columns.append(f"{col}_{seen[col]}")
+                else:
+                    seen[col] = 0
+                    unique_columns.append(col)
+            df_add_indicators.columns = unique_columns
         
         # 合并数据
         df_merged = df_main.merge(
             df_add_indicators,
             on='_merge_key',
             how='left',
-            suffixes=('', f'_{sheet_name}')
+            suffixes=('', f'_from_{sheet_name}')
         )
+        
+        # 🔧 新增：合并后再次检查重复列名
+        if df_merged.columns.duplicated().any():
+            st.warning(f"   ⚠ 合并后发现重复列名，正在修复...")
+            seen = {}
+            unique_columns = []
+            for col in df_merged.columns:
+                if col in seen:
+                    seen[col] += 1
+                    unique_columns.append(f"{col}_{seen[col]}")
+                else:
+                    seen[col] = 0
+                    unique_columns.append(col)
+            df_merged.columns = unique_columns
         
         st.write(f"   ✓ {sheet_name}合并：添加了 {len(indicator_cols)} 个指标")
         
