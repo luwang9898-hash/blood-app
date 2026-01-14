@@ -200,42 +200,98 @@ st.set_page_config(
 # ========== 增强配置 ==========
 
 # 主题配置 - 用于表格图
+# 新的主题配置 - 7个生理系统分类
+# 格式: '指标key': ('中文名', '英文名')
 THEME_CONFIG = {
-    '0_关键指标摘要': {
-        '关键指标': {
-            '血红蛋白': '血红蛋白Hb (g/L)',
-            '铁蛋白': '铁蛋白Ferri (Ng/ml)',
-            '肌酸激酶': '肌酸激酶CK (U/L)',
-            '睾酮': '睾酮T (ng/dl)',
-            '皮质醇': '皮质醇(ug/dL)'
+    '1_调控与指挥中心': {
+        '合成代谢\nAnabolism': {
+            '睾酮': ('睾酮', 'Testosterone'),
+            '游离睾酮': ('游离睾酮', 'Free Testosterone'),
+        },
+        '分解代谢\nCatabolism': {
+            '皮质醇': ('皮质醇', 'Cortisol'),
+        },
+        '状态平衡\nStatus Balance': {
+            '睾酮/皮质醇比值': ('睾酮/皮质醇比值', 'T/C Ratio'),
         }
     },
 
-    '1_训练负荷耐受性': {
-        '一、肌肉对训练强度的耐受性': {'肌酸激酶': '肌酸激酶CK (U/L)', '肌酐': '肌酐 (μmol/L)'},
-        '二、对训练量的耐受性及能量代谢': {
-            '血尿素': '血尿素BUN (mmol/L)', '皮质醇': '皮质醇(ug/dL)', '血糖': '血糖(mmol/L)'},
-    },
-    '2_合成代谢与恢复能力': {
-        '一、促合成-恢复能力': {'睾酮': '睾酮T (ng/dl)', '游离睾酮': '游离睾酮FT (ng/dl)'},
-        '二、氧转运': {
-            '红细胞': '红细胞RBC (10^12/L)', '血红蛋白': '血红蛋白Hb (g/L)',
-            '网织红细胞百分比': '网织红细胞百分比retic%',
+    '2_执行与代谢系统': {
+        '结构完整性（硬件）\nStructural Integrity (Hardware)': {
+            '肌酸激酶': ('肌酸激酶', 'Creatine Kinase'),
         },
-    },
-    '3_铁状态与恢复能力': {
-        '一、铁状态与恢复能力': {
-            '铁蛋白': '铁蛋白Ferri (Ng/ml)', '血红蛋白': '血红蛋白Hb (g/L)',
-            '平均红细胞体积': '平均红细胞体积MCV (fl)', '平均红细胞血红蛋白': '平均红细胞血红蛋白MCH (pg)',
-            '平均红细胞血红蛋白浓度': '平均红细胞血红蛋白浓度MCHC (g/L)',
-            '超敏C反应蛋白': '超敏C反应蛋白hsCRP (mg/L)',
+        '能量储备与代谢（软件/燃料）\nEnergy Reserves and Metabolism (Software/Fuel)': {
+            '血糖': ('血糖', 'Blood Glucose'),
+            '血尿素': ('血尿素', 'Blood Urea'),
+            '尿酸': ('尿酸', 'Uric Acid'),
         }
     },
-    '4_炎症免疫反应': {
-        '一、高尿酸血症': {'尿酸': '尿酸UA (umol/L)'},
-        '二、免疫/炎性反应': {
-            '超敏C反应蛋白': '超敏C反应蛋白hsCRP (mg/L)', '白细胞': '白细胞WBC (10^9/L)',
-            '血小板': '血小板PLT (10^9/L)',
+
+    '3_循环与运载系统': {
+        '输送载体（红细胞）\nTransport Carrier (Red Blood Cells)': {
+            '血红蛋白': ('血红蛋白', 'Hemoglobin'),
+            '红细胞': ('红细胞', 'RBC Count'),
+            '红细胞压积': ('红细胞压积', 'Hematocrit'),
+            '网织红细胞百分比': ('网织红细胞百分比', 'Reticulocyte %'),
+            '平均红细胞容积': ('平均红细胞容积', 'MCV'),
+        },
+        '生化原料（造血储备）\nBiochemical Raw Materials (Hematopoietic Reserves)': {
+            '铁蛋白': ('铁蛋白', 'Ferritin'),
+            '维生素B12': ('维生素B12', 'Vitamin B12'),
+            '维生素B6': ('维生素B6', 'Vitamin B6'),
+            '叶酸': ('叶酸', 'Folic Acid'),
+        }
+    },
+
+    '4_后勤保障与维护': {
+        '免疫防御（炎性监控）\nImmune Defense (Inflammatory Monitoring)': {
+            '白细胞': ('白细胞', 'WBC Count'),
+            '超敏C反应蛋白': ('超敏C反应蛋白', 'hs-CRP'),
+            '触珠蛋白': ('触珠蛋白', 'Haptoglobin'),
+        },
+        '代谢辅酶（微量营养）\nMetabolic Coenzymes (Micronutrients)': {
+            '维生素B1': ('维生素B1', 'Vitamin B1'),
+            '维生素B2': ('维生素B2', 'Vitamin B2'),
+            '维生素D3': ('维生素D3', 'Vitamin D3'),
+        },
+        '内环境稳态（水盐平衡）\nInternal Environment Homeostasis (Water-Electrolyte Balance)': {
+            '钾': ('钾', 'Potassium'),
+            '钠': ('钠', 'Sodium'),
+            '氯': ('氯', 'Chloride'),
+            '渗透压': ('渗透压', 'Osmotic Pressure'),
+            '血尿素/肌酐': ('血尿素/肌酐', 'BUN/Cr Ratio'),
+        }
+    },
+
+    '5_甲状腺功能': {
+        '甲状腺功能\nThyroid Function': {
+            '总甲状腺素': ('总甲状腺素', 'Total Thyroxine'),
+            '总三碘甲状腺原氨酸': ('总三碘甲状腺原氨酸', 'Total T3'),
+            '游离三碘甲状原氨酸': ('游离三碘甲状原氨酸', 'Free T3'),
+            '游离甲状腺素': ('游离甲状腺素', 'Free T4'),
+            '超敏促甲状腺素': ('超敏促甲状腺素', 'hs-TSH'),
+        }
+    },
+
+    '6_肝脏功能': {
+        '肝脏功能\nLiver Function': {
+            '丙氨酸氨基转移酶': ('丙氨酸氨基转移酶', 'ALT'),
+            '天冬氨酸氨基转移酶': ('天冬氨酸氨基转移酶', 'AST'),
+            '碱性磷酸酶': ('碱性磷酸酶', 'ALP'),
+            'γ-谷氨酰基转移酶': ('γ-谷氨酰基转移酶', 'γ-GT'),
+            '总胆红素': ('总胆红素', 'Total Bilirubin'),
+            '直接胆红素': ('直接胆红素', 'Direct Bilirubin'),
+            '总蛋白': ('总蛋白', 'Total Protein'),
+            '间接胆红素': ('间接胆红素', 'Indirect Bilirubin'),
+        }
+    },
+
+    '7_血脂': {
+        '血脂\nBlood Lipids': {
+            '甘油三酯': ('甘油三酯', 'Triglycerides'),
+            '高密度脂蛋白': ('高密度脂蛋白', 'HDL'),
+            '总胆固醇': ('总胆固醇', 'Total Cholesterol'),
+            '低密度脂蛋白': ('低密度脂蛋白', 'LDL'),
         }
     },
 }
@@ -506,7 +562,7 @@ def find_indicator_column(df, indicator):
 # ========== 图表生成函数 ==========
 
 def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
-    """生成主题表格图"""
+    """生成主题表格图 - 支持中英文双行显示"""
     if athlete_df.empty:
         return None, []
 
@@ -518,12 +574,27 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
     cell_colors = []
     missing_indicators = []  # 记录缺失的指标
 
+    # 状态中英文对照
+    status_translation = {
+        '严重偏低': ('严重偏低', 'Severely Low'),
+        '偏低': ('偏低', 'Low'),
+        '正常': ('正常', 'Normal'),
+        '偏高': ('偏高', 'High'),
+        '严重偏高': ('严重偏高', 'Severely High'),
+        '-': ('—', '—'),  # 无数据或未找到
+        'N/A': ('—', '—'),  # 保留兼容
+        '未找到': ('—', '—'),  # 保留兼容
+    }
+
     for category_title, indicators in categories.items():
         # 添加分类标题行（4列）
         cell_text.append([category_title, '', '', ''])
         cell_colors.append([COLOR_CATEGORY_HEADER, COLOR_CATEGORY_HEADER, COLOR_CATEGORY_HEADER, COLOR_CATEGORY_HEADER])
 
-        for col_key, col_name in indicators.items():
+        for col_key, name_tuple in indicators.items():
+            # name_tuple是(中文名, 英文名)
+            cn_name, en_name = name_tuple
+            
             # 查找实际的列名
             actual_col = find_indicator_column(athlete_df, col_key)
 
@@ -557,26 +628,35 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
                         val_str = f"{val:.2f}"
                 else:
                     val_str = "—"
-                    status = "N/A"
-                    bg_color = '#F0F8FF'
+                    status = "-"  # 无数据显示为"-"
+                    bg_color = '#F8F8F8'
             else:
                 val_str = "—"
-                status = "未找到"
-                bg_color = '#FFE4E1'  # 浅红色，表示列未找到
-                missing_indicators.append((col_key, col_name))
+                status = "-"  # 未找到显示为"-"
+                bg_color = '#F8F8F8'  # 浅灰色背景
+                missing_indicators.append((col_key, f"{cn_name}/{en_name}"))
 
-            cell_text.append([f"  {col_name}", val_str, range_str, status])
+            # 构建双行文本
+            indicator_text = f"{cn_name}\n{en_name}"
+            # 如果status是"-"，直接显示"-"，否则查询翻译
+            if status == "-":
+                status_text = "—"
+            else:
+                status_cn, status_en = status_translation.get(status, (status, status))
+                status_text = f"{status_cn}\n{status_en}"
+            
+            cell_text.append([indicator_text, val_str, range_str, status_text])
             cell_colors.append(['#F8F8F8', bg_color, '#F8F8F8', bg_color])
 
     # 创建图表（4列，高清晰度）
-    fig_height = len(cell_text) * 0.7 + 1.5
+    fig_height = len(cell_text) * 0.9 + 1.5  # 增加行高以容纳双行文本
     fig, ax = plt.subplots(figsize=(10, fig_height), dpi=150)
     ax.axis('off')
 
     col_widths = [0.45, 0.18, 0.18, 0.19]
     table = ax.table(
         cellText=cell_text,
-        colLabels=['检测指标', '结果', '正常范围', '评价'],
+        colLabels=['检测指标\nIndicator', '结果\nResult', '参考范围\nReference', '评价\nEvaluation'],
         cellColours=cell_colors,
         loc='center',
         cellLoc='center',
@@ -585,21 +665,25 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
     )
 
     table.auto_set_font_size(False)
-    table.set_fontsize(12)
-    table.scale(1, 2.3)
+    table.set_fontsize(10)
+    table.scale(1, 2.8)  # 增加行高比例
 
     # 样式设置
     for (r, c), cell in table.get_celld().items():
-        if r == 0:
-            cell.set_text_props(weight='bold', color='white')
+        if r == 0:  # 表头
+            cell.set_text_props(weight='bold', color='white', fontsize=9)
             cell.set_edgecolor('white')
-        if cell.get_facecolor() == COLOR_CATEGORY_HEADER:
-            cell.set_text_props(weight='bold', color='white', ha='left')
+        elif cell.get_facecolor() == COLOR_CATEGORY_HEADER:  # 分类标题
+            cell.set_text_props(weight='bold', color='white', ha='left', fontsize=11)
             cell.set_edgecolor('white')
-        else:
+        else:  # 数据行
             cell.set_edgecolor('#DDDDDD')
-            if r > 0 and c == 0:
-                cell.get_text().set_ha('left')
+            if r > 0 and c == 0:  # 指标名称列，左对齐
+                cell.set_text_props(ha='left', fontsize=9)
+            elif r > 0 and c in [1, 2]:  # 数值和范围列，较小字体
+                cell.set_text_props(fontsize=10)
+            elif r > 0 and c == 3:  # 评价列
+                cell.set_text_props(fontsize=8.5)
 
     theme_display = theme_name.split('_')[-1]
     plt.title(f"{athlete_name} ({gender}) - {theme_display} ({latest_date})",
