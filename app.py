@@ -335,6 +335,7 @@ def load_data_multisheet(file_path_or_buffer):
     """
     从多个sheet加载数据并合并
     支持：月周测试指标、季度测试指标、年度测试指标、其他
+    处理双层表头
     """
     try:
         st.info("📊 开始读取多个sheet的数据...")
@@ -361,41 +362,46 @@ def load_data_multisheet(file_path_or_buffer):
                 new_columns.append(col_str)
         df_monthly.columns = new_columns
         
-        # ===== 2. 读取季度测试指标（header=1）- 维生素和电解质 =====
+        # ===== 2. 读取季度测试指标（双层表头）- 维生素和电解质 =====
         df_quarterly = None
         try:
             st.write("正在读取：季度测试指标...")
-            df_quarterly = pd.read_excel(
+            # 使用header=[0,1]读取双层表头
+            df_q_raw = pd.read_excel(
                 file_path_or_buffer,
                 sheet_name='季度测试指标',
-                header=1  # 使用第二行作为列名
+                header=[0, 1]
             )
+            # 合并双层列名
+            df_quarterly = flatten_multiindex_columns(df_q_raw, '季度测试')
             st.write(f"   ✓ 季度测试：{len(df_quarterly)} 行，{len(df_quarterly.columns)} 列")
         except Exception as e:
             st.warning(f"   ⚠ 季度测试指标读取失败：{e}")
         
-        # ===== 3. 读取年度测试指标（header=1）- 甲状腺、肝功、血脂 =====
+        # ===== 3. 读取年度测试指标（双层表头）- 甲状腺、肝功、血脂 =====
         df_yearly = None
         try:
             st.write("正在读取：年度测试指标...")
-            df_yearly = pd.read_excel(
+            df_y_raw = pd.read_excel(
                 file_path_or_buffer,
                 sheet_name='年度测试指标',
-                header=1  # 使用第二行作为列名
+                header=[0, 1]
             )
+            df_yearly = flatten_multiindex_columns(df_y_raw, '年度测试')
             st.write(f"   ✓ 年度测试：{len(df_yearly)} 行，{len(df_yearly.columns)} 列")
         except Exception as e:
             st.warning(f"   ⚠ 年度测试指标读取失败：{e}")
         
-        # ===== 4. 读取其他sheet（header=1）- 触珠蛋白等 =====
+        # ===== 4. 读取其他sheet（双层表头）- 触珠蛋白等 =====
         df_other = None
         try:
             st.write("正在读取：其他指标...")
-            df_other = pd.read_excel(
+            df_o_raw = pd.read_excel(
                 file_path_or_buffer,
                 sheet_name='其他',
-                header=1  # 使用第二行作为列名
+                header=[0, 1]
             )
+            df_other = flatten_multiindex_columns(df_o_raw, '其他')
             st.write(f"   ✓ 其他指标：{len(df_other)} 行，{len(df_other.columns)} 列")
         except Exception as e:
             st.warning(f"   ⚠ 其他指标读取失败：{e}")
@@ -413,6 +419,38 @@ def load_data_multisheet(file_path_or_buffer):
         import traceback
         st.error(traceback.format_exc())
         return None
+
+
+def flatten_multiindex_columns(df, sheet_name):
+    """
+    将双层MultiIndex列名展平为单层
+    第0层：基础信息列（项目、姓名、测试日期等）保留
+    第1层：指标列（维生素B12等）保留
+    """
+    new_columns = []
+    
+    for col in df.columns:
+        if isinstance(col, tuple):
+            # 双层列名
+            level0, level1 = col[0], col[1]
+            
+            # 如果第0层是有效的列名（项目、姓名、测试日期等），优先使用
+            if not (pd.isna(level0) or str(level0).startswith('Unnamed')):
+                # 基础信息列
+                new_columns.append(str(level0))
+            # 否则使用第1层
+            elif not (pd.isna(level1) or str(level1).startswith('Unnamed')):
+                # 指标列
+                new_columns.append(str(level1))
+            else:
+                # 都是无效的，使用Unnamed
+                new_columns.append(f'Unnamed_{len(new_columns)}')
+        else:
+            # 单层列名
+            new_columns.append(str(col))
+    
+    df.columns = new_columns
+    return df
 
 
 def merge_all_sheets(df_monthly, df_quarterly, df_yearly, df_other):
@@ -441,7 +479,10 @@ def merge_all_sheets(df_monthly, df_quarterly, df_yearly, df_other):
         return df_result
     
     # 创建合并键
-    df_result['_merge_key'] = df_result[name_col_monthly].astype(str) + '_' + df_result[date_col_monthly].astype(str)
+    df_result['_merge_key'] = (
+        df_result[name_col_monthly].astype(str) + '_' + 
+        df_result[date_col_monthly].astype(str)
+    )
     
     # 合并季度测试数据
     if df_quarterly is not None:
@@ -480,21 +521,38 @@ def merge_sheet_data(df_main, df_add, name_col, date_col, sheet_name):
                 date_col_add = col_name
                 break
         
-        if not name_col_add or not date_col_add:
-            st.warning(f"   ⚠ {sheet_name}：无法找到姓名或日期列，跳过合并")
+        if not name_col_add:
+            st.warning(f"   ⚠ {sheet_name}：无法找到姓名列，跳过合并")
+            st.write(f"   可用列: {', '.join(df_add.columns[:10].tolist())}...")
+            return df_main
+            
+        if not date_col_add:
+            st.warning(f"   ⚠ {sheet_name}：无法找到日期列，跳过合并")
+            st.write(f"   可用列: {', '.join(df_add.columns[:10].tolist())}...")
             return df_main
         
         # 创建合并键
-        df_add['_merge_key'] = df_add[name_col_add].astype(str) + '_' + df_add[date_col_add].astype(str)
+        df_add['_merge_key'] = (
+            df_add[name_col_add].astype(str) + '_' + 
+            df_add[date_col_add].astype(str)
+        )
         
         # 选择要合并的指标列（排除基本信息列）
-        exclude_cols = ['项目', '编号', '姓名', '性别', '出生年月日', '身高', '体重', '测试日期', 
-                       'Name', 'Name_final', 'Date', 'Date_auto', '_merge_key']
+        exclude_cols = [
+            '项目', '编号', '姓名', '性别', '出生年月日', '身高', '体重', '测试日期', 
+            'Name', 'Name_final', 'Date', 'Date_auto', '_merge_key',
+            '教练', '训练地点', '测试单位', '测试阶段', '重点运动员', '专项'
+        ]
         
-        indicator_cols = [col for col in df_add.columns 
-                         if col not in exclude_cols 
-                         and not str(col).startswith('Unnamed:')
-                         and not pd.isna(col)]
+        indicator_cols = []
+        for col in df_add.columns:
+            if col in exclude_cols:
+                continue
+            if str(col).startswith('Unnamed'):
+                continue
+            if pd.isna(col):
+                continue
+            indicator_cols.append(col)
         
         # 只保留指标列和合并键
         df_add_indicators = df_add[['_merge_key'] + indicator_cols].copy()
@@ -513,9 +571,82 @@ def merge_sheet_data(df_main, df_add, name_col, date_col, sheet_name):
         
     except Exception as e:
         st.warning(f"   ⚠ {sheet_name}合并失败：{e}")
+        import traceback
+        st.write(traceback.format_exc())
         return df_main
 
 
+
+def get_indicator_status(indicator, value, ref_ranges):
+    """判断指标状态（五档）- 完全修复版"""
+    # 先检查是否为NaN
+    if indicator not in ref_ranges or pd.isna(value):
+        return '数据缺失', '#F0F8FF', 'N/A'
+    
+    # 🔧 修复：转换value为数值类型
+    try:
+        if isinstance(value, str):
+            # 移除可能的空格和特殊字符
+            value = value.strip()
+            if value == '' or value == '-' or value.lower() == 'nan':
+                return '数据缺失', '#F0F8FF', 'N/A'
+            value = float(value)
+        elif not isinstance(value, (int, float)):
+            # 如果不是字符串也不是数字，尝试转换
+            value = float(value)
+    except (ValueError, TypeError):
+        # 如果无法转换，返回数据缺失
+        return '数据缺失', '#F0F8FF', 'N/A'
+
+    ranges = ref_ranges[indicator]
+    
+    # 🔧 新增：确保参考范围值也是数值类型
+    try:
+        low_1 = ranges.get('low_1')
+        low_2 = ranges.get('low_2')
+        high_2 = ranges.get('high_2')
+        high_1 = ranges.get('high_1')
+        
+        # 转换参考范围值为浮点数
+        if low_1 is not None and not isinstance(low_1, (int, float)):
+            low_1 = float(low_1) if not pd.isna(low_1) else None
+        if low_2 is not None and not isinstance(low_2, (int, float)):
+            low_2 = float(low_2) if not pd.isna(low_2) else None
+        if high_2 is not None and not isinstance(high_2, (int, float)):
+            high_2 = float(high_2) if not pd.isna(high_2) else None
+        if high_1 is not None and not isinstance(high_1, (int, float)):
+            high_1 = float(high_1) if not pd.isna(high_1) else None
+            
+    except (ValueError, TypeError) as e:
+        # 参考范围值有问题
+        return '数据缺失', '#F0F8FF', 'N/A'
+
+    # 高优指标列表（高于正常范围是好事）
+    high_is_better_indicators = ['铁蛋白', '血红蛋白', '睾酮', '游离睾酮']
+
+    # 判断状态
+    try:
+        if pd.notna(low_1) and value < low_1:
+            return '严重偏低', COLOR_SEVERE_LOW, 'severe_low'
+        elif pd.notna(low_2) and value < low_2:
+            return '偏低', COLOR_LOW, 'low'
+        elif pd.notna(high_1) and value > high_1:
+            # 判断是否是高优指标
+            if indicator in high_is_better_indicators:
+                return '优秀', COLOR_SEVERE_HIGH, 'excellent'
+            else:
+                return '严重偏高', COLOR_SEVERE_HIGH, 'severe_high'
+        elif pd.notna(high_2) and value > high_2:
+            # 判断是否是高优指标
+            if indicator in high_is_better_indicators:
+                return '良好', COLOR_HIGH, 'good'
+            else:
+                return '偏高', COLOR_HIGH, 'high'
+        else:
+            return '正常', COLOR_NORMAL, 'normal'
+    except (TypeError, ValueError) as e:
+        # 比较时仍有问题
+        return '数据缺失', '#F0F8FF', 'N/A'
 
 def clean_data_final(df):
     """数据清洗函数"""
