@@ -36,7 +36,6 @@ else:
 # 导入配置
 
 from config import (
-    MALE_ATHLETES, FEMALE_ATHLETES,
     MALE_REF_RANGES, FEMALE_REF_RANGES,
     COLUMN_NAME_MAPPING
 )
@@ -358,7 +357,52 @@ def load_data_final(file_path_or_buffer):
                 new_columns.append(col_str)
 
         df.columns = new_columns
+def get_indicator_status(indicator, value, ref_ranges):
+    """判断指标状态（五档）"""
+    # 先检查是否为NaN
+    if indicator not in ref_ranges or pd.isna(value):
+        return '数据缺失', '#F0F8FF', 'N/A'
+    
+    # 🔧 修复：转换value为数值类型
+    try:
+        if isinstance(value, str):
+            # 移除可能的空格和特殊字符
+            value = value.strip()
+            value = float(value)
+        elif not isinstance(value, (int, float)):
+            # 如果不是字符串也不是数字，尝试转换
+            value = float(value)
+    except (ValueError, TypeError):
+        # 如果无法转换，返回数据缺失
+        return '数据缺失', '#F0F8FF', 'N/A'
 
+    ranges = ref_ranges[indicator]
+    low_1 = ranges.get('low_1')
+    low_2 = ranges.get('low_2')
+    high_2 = ranges.get('high_2')
+    high_1 = ranges.get('high_1')
+
+    # 高优指标列表（高于正常范围是好事）
+    high_is_better_indicators = ['铁蛋白', '血红蛋白', '睾酮', '游离睾酮']
+
+    if pd.notna(low_1) and value < low_1:
+        return '严重偏低', COLOR_SEVERE_LOW, 'severe_low'
+    elif pd.notna(low_2) and value < low_2:
+        return '偏低', COLOR_LOW, 'low'
+    elif pd.notna(high_1) and value > high_1:
+        # 判断是否是高优指标
+        if indicator in high_is_better_indicators:
+            return '优秀', COLOR_SEVERE_HIGH, 'excellent'
+        else:
+            return '严重偏高', COLOR_SEVERE_HIGH, 'severe_high'
+    elif pd.notna(high_2) and value > high_2:
+        # 判断是否是高优指标
+        if indicator in high_is_better_indicators:
+            return '良好', COLOR_HIGH, 'good'
+        else:
+            return '偏高', COLOR_HIGH, 'high'
+    else:
+        return '正常', COLOR_NORMAL, 'normal'
         if not df.columns.duplicated().any():
             st.success(f"✅ 列名已唯一化：共 {len(df.columns)} 列")
 
