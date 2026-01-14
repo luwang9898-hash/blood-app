@@ -532,6 +532,10 @@ def merge_all_sheets(df_monthly, df_quarterly, df_yearly, df_other):
     if '_merge_key' in df_result.columns:
         df_result = df_result.drop('_merge_key', axis=1)
     
+    # 🔧 新增：应用列名映射，标准化列名
+    df_result = df_result.rename(columns=COLUMN_NAME_MAPPING)
+    st.write(f"   ✓ 列名标准化完成")
+    
     return df_result
 
 
@@ -719,19 +723,19 @@ def get_indicator_status(indicator, value, ref_ranges):
     """判断指标状态（五档）- 完全修复版"""
     # 先检查是否为NaN
     if indicator not in ref_ranges or pd.isna(value):
-        return '-', '#F0F8FF', 'N/A'
+        return '数据缺失', '#F0F8FF', 'N/A'
     
     # 🔧 修复1：转换value为数值类型
     try:
         if isinstance(value, str):
             value = value.strip()
             if value == '' or value == '-' or value.lower() == 'nan':
-                return '-', '#F0F8FF', 'N/A'
+                return '数据缺失', '#F0F8FF', 'N/A'
             value = float(value)
         elif not isinstance(value, (int, float)):
             value = float(value)
     except (ValueError, TypeError):
-        return '-', '#F0F8FF', 'N/A'
+        return '数据缺失', '#F0F8FF', 'N/A'
 
     ranges = ref_ranges[indicator]
     
@@ -752,7 +756,7 @@ def get_indicator_status(indicator, value, ref_ranges):
         if high_1 is not None and not isinstance(high_1, (int, float)):
             high_1 = float(high_1) if not pd.isna(high_1) else None
     except (ValueError, TypeError):
-        return '-', '#F0F8FF', 'N/A'
+        return '数据缺失', '#F0F8FF', 'N/A'
 
     # 高优指标列表（高于正常范围是好事）
     high_is_better_indicators = ['铁蛋白', '血红蛋白', '睾酮', '游离睾酮']
@@ -776,7 +780,7 @@ def get_indicator_status(indicator, value, ref_ranges):
         else:
             return '正常', COLOR_NORMAL, 'normal'
     except (TypeError, ValueError):
-        return '-', '#F0F8FF', 'N/A'
+        return '数据缺失', '#F0F8FF', 'N/A'
 
 
 # 指标别名映射（用于处理常见的名称差异）
