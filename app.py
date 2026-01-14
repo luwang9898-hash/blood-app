@@ -536,6 +536,21 @@ def merge_all_sheets(df_monthly, df_quarterly, df_yearly, df_other):
     df_result = df_result.rename(columns=COLUMN_NAME_MAPPING)
     st.write(f"   ✓ 列名标准化完成")
     
+    # 🔧 检查并处理映射后的重复列名
+    if df_result.columns.duplicated().any():
+        st.warning("   ⚠ 映射后发现重复列名，正在处理...")
+        
+        # 对于重复列名，保留第一列，删除后续列
+        seen = {}
+        cols_to_keep = []
+        for i, col in enumerate(df_result.columns):
+            if col not in seen:
+                seen[col] = i
+                cols_to_keep.append(i)
+        
+        df_result = df_result.iloc[:, cols_to_keep]
+        st.write(f"   ✓ 重复列名已处理，保留了{len(cols_to_keep)}列")
+    
     return df_result
 
 
