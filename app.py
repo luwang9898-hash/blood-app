@@ -1066,9 +1066,52 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
         '未找到': ('—', '—'),  # 保留兼容
     }
 
+    # ⭐ 新增：格式化分类标题为多行显示
+    def format_category_title(title):
+        """
+        将分类标题拆分为多行：
+        输入："免疫防御（炎性监控）\nImmune Defense (Inflammatory Monitoring)"
+        输出："免疫防御\nImmune Defense\n(炎性监控)"
+        """
+        lines = title.split('\n')
+        if len(lines) != 2:
+            return title  # 格式不对，保持原样
+        
+        cn_line = lines[0]  # 中文行：免疫防御（炎性监控）
+        en_line = lines[1]  # 英文行：Immune Defense (Inflammatory Monitoring)
+        
+        # 提取中文主体和括号内容
+        import re
+        cn_match = re.match(r'(.+?)（(.+?)）', cn_line)
+        if cn_match:
+            cn_main = cn_match.group(1)  # 免疫防御
+            cn_paren = cn_match.group(2)  # 炎性监控
+        else:
+            cn_main = cn_line
+            cn_paren = None
+        
+        # 提取英文主体和括号内容
+        en_match = re.match(r'(.+?)\s*\((.+?)\)', en_line)
+        if en_match:
+            en_main = en_match.group(1).strip()  # Immune Defense
+            en_paren = en_match.group(2)  # Inflammatory Monitoring
+        else:
+            en_main = en_line
+            en_paren = None
+        
+        # 构建新的多行标题
+        if cn_paren:
+            # 有括号：3行
+            return f"{cn_main}\n{en_main}\n({cn_paren})"
+        else:
+            # 无括号：2行
+            return f"{cn_main}\n{en_main}"
+
     for category_title, indicators in categories.items():
+        # ⭐ 格式化分类标题为多行
+        formatted_title = format_category_title(category_title)
         # 添加分类标题行（4列）- 居中对齐
-        cell_text.append([category_title, '', '', ''])
+        cell_text.append([formatted_title, '', '', ''])
         cell_colors.append([COLOR_CATEGORY_HEADER, COLOR_CATEGORY_HEADER, COLOR_CATEGORY_HEADER, COLOR_CATEGORY_HEADER])
 
         for col_key, name_tuple in indicators.items():
@@ -1229,25 +1272,8 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
                 cell.set_edgecolor(COLOR_CATEGORY_HEADER)
                 cell.set_linewidth(0)
                 
-                if c == 0:  # 第一列：调整文字位置到整行中心
-                    cell.set_text_props(weight='bold', color='#2C3E50', fontsize=FONTSIZE_CATEGORY)
-                    # 获取文字对象
-                    text = cell.get_text()
-                    text.set_clip_on(False)  # 允许文字超出边界
-                    # ⭐ 关键：修改文字的水平对齐和位置
-                    # 计算需要的偏移：从第一列中心到整行中心
-                    # 第一列宽度0.45，中心在0.225（相对于表格起点）
-                    # 整行中心在0.5
-                    # 需要向右移动：0.5 - 0.225 = 0.275（相对于表格宽度）
-                    # 但文字坐标是相对于单元格的，所以需要转换
-                    # 单元格内相对位置是0.5（中心），要移到整行中心
-                    # 整行中心相对于第一列左边界 = 0.5
-                    # 第一列宽度 = 0.45
-                    # 所以相对于第一列中心的偏移 = 0.5 - 0.45/2 = 0.275
-                    # 单元格内的位置需要调整为：0.5 + (0.275 / 0.45) = 0.5 + 0.611 = 1.111
-                    text.set_position((1.111, 0.5))  # x向右移，y居中
-                    text.set_ha('center')
-                    text.set_va('center')
+                if c == 0:  # 第一列：显示多行文字，居中
+                    cell.set_text_props(weight='bold', color='#2C3E50', ha='center', va='center', fontsize=FONTSIZE_CATEGORY)
                 else:  # 其他列：隐藏文本，完全透明
                     cell.set_text_props(visible=False)
                     cell.set_alpha(0)
