@@ -1183,15 +1183,15 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
             cell.set_text_props(weight='bold', color='white', fontsize=FONTSIZE_HEADER)
             cell.set_edgecolor('white')
         elif cell.get_facecolor() == COLOR_CATEGORY_HEADER:  # 分类标题
-            cell.set_text_props(weight='bold', color='white', ha='center', fontsize=FONTSIZE_CATEGORY)
+            # 所有分类标题单元格都去掉边框，颜色统一
             cell.set_edgecolor(COLOR_CATEGORY_HEADER)
             cell.set_linewidth(0)
-            if c > 0:  # 除了第一列，其他列设为不可见
+            
+            if c == 0:  # 第一列：显示文本，居中，深色文字
+                cell.set_text_props(weight='bold', color='#2C3E50', ha='center', fontsize=FONTSIZE_CATEGORY)
+            else:  # 其他列：隐藏文本，完全透明
+                cell.set_text_props(visible=False)
                 cell.set_alpha(0)
-                cell.set_text('')  # 分类标题
-            cell.set_text_props(weight='bold', color='white', ha='center', fontsize=FONTSIZE_CATEGORY)
-            cell.set_edgecolor(COLOR_CATEGORY_HEADER)  # ← 改这里
-            cell.set_linewidth(0)  # ← 加这行
         else:  # 数据行
             cell.set_edgecolor('#DDDDDD')
             if r > 0 and c == 0:  # 指标名称列，左对齐
