@@ -1183,7 +1183,8 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
     fig, ax = plt.subplots(figsize=(10, fig_height), dpi=150)
     ax.axis('off')
 
-    col_widths = [0.45, 0.18, 0.18, 0.19]
+    # 列宽设置：第一列加宽以容纳分类标题（中英文都很长）
+    col_widths = [0.55, 0.15, 0.15, 0.15]  # 第一列0.55，其他列平均分配
     table = ax.table(
         cellText=cell_text,
         colLabels=['检测指标\nIndicator', '结果\nResult', '参考范围\nReference', '评价\nEvaluation'],
@@ -1230,17 +1231,18 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
                 
                 if c == 0:  # 第一列：显示文本，居中，深色文字
                     cell.set_text_props(weight='bold', color='#2C3E50', ha='center', fontsize=FONTSIZE_CATEGORY)
-                    # ⭐ 关键修复1：让文字可以超出单元格边界
+                    # ⭐ 关键修复：让文字可以超出单元格边界
                     text = cell.get_text()
-                    text.set_clip_on(False)
-                    # ⭐ 关键修复2：调整单元格边界框，横跨整行
-                    bbox = cell.get_bbox()
-                    bbox.x0 = 0    # 从最左边开始
-                    bbox.x1 = 1    # 到最右边结束
-                    cell.set_bbox(bbox)
+                    text.set_clip_on(False)  # 文字不裁剪
+                    # ⭐ 调整文字位置：从第一列中心移到整行中心
+                    # 第一列宽度0.45，整行中心应该在0.5位置
+                    # 所以需要向右移动 (0.5 - 0.45/2) = 0.275
+                    # 但由于ha='center'，文字中心在单元格中心，我们让它扩展即可
                 else:  # 其他列：隐藏文本，完全透明
                     cell.set_text_props(visible=False)
                     cell.set_alpha(0)
+                    # ⭐ 其他列的背景也设为分类标题颜色，确保整行一致
+                    cell.set_facecolor(COLOR_CATEGORY_HEADER)
             else:  # 数据行
                 cell.set_edgecolor('#DDDDDD')
                 if r > 0 and c == 0:  # 指标名称列，左对齐
@@ -1253,24 +1255,6 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
     # 🔍 输出统计
     print(f"   找到分类标题单元格: {category_cell_count} 个")
     print(f"   预期数量: {len([k for k in cell_colors if k[0] == COLOR_CATEGORY_HEADER]) * 4}")
-    
-    # ⭐ 后处理：专门处理分类标题行，确保完美合并效果
-    for (r, c), cell in table.get_celld().items():
-        if r > 0:  # 跳过表头
-            cell_color = cell.get_facecolor()
-            is_category = (abs(cell_color[0] - category_color_rgba[0]) < 0.01 and
-                          abs(cell_color[1] - category_color_rgba[1]) < 0.01 and
-                          abs(cell_color[2] - category_color_rgba[2]) < 0.01)
-            
-            if is_category and c == 0:
-                # 强制设置边界框横跨整行
-                try:
-                    xy = cell.get_xy()
-                    width_total = sum([0.45, 0.18, 0.18, 0.19])  # 所有列宽之和
-                    cell.set_width(width_total)
-                    print(f"   >>> 行{r}: 设置单元格宽度为 {width_total}")
-                except Exception as e:
-                    print(f"   >>> 行{r}: 宽度设置失败 - {e}")
 
     # 获取中英文标题
     if theme_name in CATEGORY_NAMES:
