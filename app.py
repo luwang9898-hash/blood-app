@@ -61,6 +61,7 @@ COLOR_MAIN = '#1f77b4'               # 主色调
 
 # 【样式2】字体大小配置
 # 说明：修改这里可以改变所有字体大小
+FONTSIZE_MAIN_TITLE = 24    # 一级标题字体大小
 FONTSIZE_HEADER = 20                 # 表头字体大小
 FONTSIZE_CATEGORY = 18               # ⭐【修改2】分类标题字体（二级标题）- 原来是11
 FONTSIZE_INDICATOR = 16             # ⭐【修改3】指标名称字体 - 原来是9
@@ -1706,7 +1707,7 @@ def main():
             with st.spinner("正在生成表格..."):
 
                 for theme_name, categories in THEME_CONFIG.items():
-                    st.markdown(f"<h2 style='margin-bottom: {TITLE_TABLE_SPACING}em;'>{theme_name.split('_')[-1]}</h3>", unsafe_allow_html=True)
+                    st.markdown(f"<h2 style='margin-bottom: {TITLE_TABLE_SPACING}em;font-size: {FONTSIZE_MAIN_TITLE}px;'>{theme_name.split('_')[-1]}</h3>", unsafe_allow_html=True)
                     result = plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender)
 
                     if result:
