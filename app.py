@@ -1183,8 +1183,8 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
     fig, ax = plt.subplots(figsize=(10, fig_height), dpi=150)
     ax.axis('off')
 
-    # 列宽设置：第一列加宽以容纳分类标题（中英文都很长）
-    col_widths = [0.55, 0.15, 0.15, 0.15]  # 第一列0.55，其他列平均分配
+    # 列宽设置：保持原来的比例
+    col_widths = [0.45, 0.18, 0.18, 0.19]  # 不改变列宽
     table = ax.table(
         cellText=cell_text,
         colLabels=['检测指标\nIndicator', '结果\nResult', '参考范围\nReference', '评价\nEvaluation'],
@@ -1229,15 +1229,25 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
                 cell.set_edgecolor(COLOR_CATEGORY_HEADER)
                 cell.set_linewidth(0)
                 
-                if c == 0:  # 第一列：显示文本，居中，深色文字
-                    cell.set_text_props(weight='bold', color='#2C3E50', ha='center', fontsize=FONTSIZE_CATEGORY)
-                    # ⭐ 关键修复：让文字可以超出单元格边界
+                if c == 0:  # 第一列：调整文字位置到整行中心
+                    cell.set_text_props(weight='bold', color='#2C3E50', fontsize=FONTSIZE_CATEGORY)
+                    # 获取文字对象
                     text = cell.get_text()
-                    text.set_clip_on(False)  # 文字不裁剪
-                    # ⭐ 调整文字位置：从第一列中心移到整行中心
-                    # 第一列宽度0.45，整行中心应该在0.5位置
-                    # 所以需要向右移动 (0.5 - 0.45/2) = 0.275
-                    # 但由于ha='center'，文字中心在单元格中心，我们让它扩展即可
+                    text.set_clip_on(False)  # 允许文字超出边界
+                    # ⭐ 关键：修改文字的水平对齐和位置
+                    # 计算需要的偏移：从第一列中心到整行中心
+                    # 第一列宽度0.45，中心在0.225（相对于表格起点）
+                    # 整行中心在0.5
+                    # 需要向右移动：0.5 - 0.225 = 0.275（相对于表格宽度）
+                    # 但文字坐标是相对于单元格的，所以需要转换
+                    # 单元格内相对位置是0.5（中心），要移到整行中心
+                    # 整行中心相对于第一列左边界 = 0.5
+                    # 第一列宽度 = 0.45
+                    # 所以相对于第一列中心的偏移 = 0.5 - 0.45/2 = 0.275
+                    # 单元格内的位置需要调整为：0.5 + (0.275 / 0.45) = 0.5 + 0.611 = 1.111
+                    text.set_position((1.111, 0.5))  # x向右移，y居中
+                    text.set_ha('center')
+                    text.set_va('center')
                 else:  # 其他列：隐藏文本，完全透明
                     cell.set_text_props(visible=False)
                     cell.set_alpha(0)
