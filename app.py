@@ -73,7 +73,7 @@ FONTSIZE_STATUS = 14               # ⭐【修改3】状态字体 - 原来是8.5
 # 【样式3】间距配置
 # 说明：修改这里可以改变标题和表格的间距
 TITLE_TABLE_SPACING = -0.5            # ⭐【修改4】一级标题和表格间距 - 原来是0.5，现在更小
-TABLE_ROW_HEIGHT = 3               # 表格行高
+TABLE_ROW_HEIGHT = 4               # ⭐【修改5】表格行高 - 从3增加到4，容纳多行标题
 
 # ============================================================================
 # 🔥 版本验证 - 启动时会在终端显示
@@ -1071,7 +1071,7 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
         """
         将分类标题拆分为多行：
         输入："免疫防御（炎性监控）\nImmune Defense (Inflammatory Monitoring)"
-        输出："免疫防御\nImmune Defense\n(炎性监控)"
+        输出："免疫防御\nImmune Defense\n(Inflammatory Monitoring)"  ← 用英文括号！
         """
         lines = title.split('\n')
         if len(lines) != 2:
@@ -1080,32 +1080,24 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
         cn_line = lines[0]  # 中文行：免疫防御（炎性监控）
         en_line = lines[1]  # 英文行：Immune Defense (Inflammatory Monitoring)
         
-        # 提取中文主体和括号内容
+        # 提取中文主体（去掉中文括号部分）
         import re
-        cn_match = re.match(r'(.+?)（(.+?)）', cn_line)
+        cn_match = re.match(r'(.+?)（.+?）', cn_line)
         if cn_match:
             cn_main = cn_match.group(1)  # 免疫防御
-            cn_paren = cn_match.group(2)  # 炎性监控
         else:
             cn_main = cn_line
-            cn_paren = None
         
         # 提取英文主体和括号内容
         en_match = re.match(r'(.+?)\s*\((.+?)\)', en_line)
         if en_match:
             en_main = en_match.group(1).strip()  # Immune Defense
-            en_paren = en_match.group(2)  # Inflammatory Monitoring
-        else:
-            en_main = en_line
-            en_paren = None
-        
-        # 构建新的多行标题
-        if cn_paren:
-            # 有括号：3行
-            return f"{cn_main}\n{en_main}\n({cn_paren})"
+            en_paren = en_match.group(2)  # Inflammatory Monitoring ← 用英文！
+            # 有括号：3行，括号内容用英文
+            return f"{cn_main}\n{en_main}\n({en_paren})"
         else:
             # 无括号：2行
-            return f"{cn_main}\n{en_main}"
+            return f"{cn_main}\n{en_line}"
 
     for category_title, indicators in categories.items():
         # ⭐ 格式化分类标题为多行
