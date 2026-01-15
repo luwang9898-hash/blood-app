@@ -1,6 +1,11 @@
 """
-运动员血液指标分析系统 - 增强版
-包含：表格图、趋势图（多运动员对比）、雷达图
+运动员血液指标分析系统 - 优化版
+保留4张主题表格 + 趋势图 + 雷达图
+
+🎨 样式修改说明：
+- 所有样式配置集中在第33-61行
+- 颜色、字体、间距都可以在那里修改
+- 详细说明请查看《样式修改指南.md》
 """
 
 import streamlit as st
@@ -10,30 +15,21 @@ import matplotlib
 import numpy as np
 from datetime import datetime
 from scipy.interpolate import make_interp_spline
-# ========== 中文字体配置（完整版）==========
-import matplotlib
-import matplotlib.pyplot as plt
+
+# ========== 中文字体配置 ==========
 import matplotlib.font_manager as fm
 import os
 
-# 获取字体文件路径
 font_path = os.path.join(os.path.dirname(__file__), 'fonts', 'SimHei.ttf')
 
-# 检查字体文件是否存在
 if os.path.exists(font_path):
-    # 临时注册字体
     fm.fontManager.addfont(font_path)
-    
-    # 设置字体
     plt.rcParams['font.sans-serif'] = ['SimHei']
     plt.rcParams['axes.unicode_minus'] = False
-    
     print(f"✅ 成功加载中文字体：{font_path}")
 else:
     print(f"❌ 字体文件不存在：{font_path}")
-    # 使用默认字体
     plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
-# 导入配置
 
 from config import (
     MALE_REF_RANGES, FEMALE_REF_RANGES,
@@ -43,8 +39,39 @@ from config import (
 # 趋势图默认指标
 TREND_INDICATORS = ['睾酮', '皮质醇', '肌酸激酶', '血尿素', '血红蛋白', '铁蛋白', '白细胞', '网织红细胞百分比']
 
+
 # ============================================================================
-# 参考范围解析函数
+# 🎨 样式配置区域 - 在这里修改所有样式
+# ============================================================================
+
+# 【样式1】颜色配置
+# 说明：修改这里可以改变所有颜色
+COLOR_SEVERE_LOW = '#4A90E2'         # 严重偏低 - 深海蓝
+COLOR_LOW = '#8BC1E9'                # 偏低 - 浅天蓝
+COLOR_NORMAL = '#E6E6E6'             # 正常 - 云雾灰
+COLOR_HIGH = '#E89A9D'               # 偏高/良好 - 浅柔红
+COLOR_SEVERE_HIGH = '#D05A5E'        # 严重偏高/优秀 - 深砖红
+
+# ⭐【修改1】黑色背景换成浅蓝色
+COLOR_CATEGORY_HEADER = '#6B9BD1'    # 浅蓝色（分类标题背景）
+COLOR_TABLE_HEADER = '#6B9BD1'       # 浅蓝色（表头背景）
+
+COLOR_CHART_BG = '#F8F9FA'           # 图表背景 - 极浅灰
+COLOR_MAIN = '#1f77b4'               # 主色调
+
+# 【样式2】字体大小配置
+# 说明：修改这里可以改变所有字体大小
+FONTSIZE_HEADER = 12                 # 表头字体大小
+FONTSIZE_CATEGORY = 14               # ⭐【修改2】分类标题字体（二级标题）- 原来是11
+FONTSIZE_INDICATOR = 11              # ⭐【修改3】指标名称字体 - 原来是9
+FONTSIZE_VALUE = 12                  # ⭐【修改3】数值字体 - 原来是10
+FONTSIZE_STATUS = 11                 # ⭐【修改3】状态字体 - 原来是8.5
+
+# 【样式3】间距配置
+# 说明：修改这里可以改变标题和表格的间距
+TITLE_TABLE_SPACING = 0.3            # ⭐【修改4】一级标题和表格间距 - 原来是0.5，现在更小
+TABLE_ROW_HEIGHT = 2.8               # 表格行高
+
 # ============================================================================
 def check_password():
     def password_entered():
@@ -277,6 +304,80 @@ RADAR_FIELDS = ['睾酮', '皮质醇', '肌酸激酶', '血尿素', '血红蛋�
 LOWER_IS_BETTER = ['肌酸激酶', '血尿素', '超敏C反应蛋白', '皮质醇']
 
 # 颜色配置 - 五档评价配色
+CATEGORY_NAMES = {
+    '1_调控与指挥中心': ('调控与指挥中心（神经-内分泌系统）', 'Control and Command Center (Neuroendocrine System)'),
+    '2_执行与代谢系统': ('执行与代谢系统（肌肉与能量状态）', 'Execution and Metabolic System (Muscle and Energy Status)'),
+    '3_循环与运载系统': ('循环与运载系统（血液运载能力）', 'Circulation and Transport System (Blood Transport Capacity)'),
+    '4_后勤保障与维护': ('后勤保障与维护（免疫与内环境）', 'Logistics Support and Maintenance (Immunity and Internal Environment)'),
+}
+
+THEME_CONFIG = {
+    '1_调控与指挥中心': {
+        '合成代谢\nAnabolism': {
+            '睾酮': ('睾酮', 'Testosterone'),
+            '游离睾酮': ('游离睾酮', 'Free Testosterone'),
+        },
+        '分解代谢\nCatabolism': {
+            '皮质醇': ('皮质醇', 'Cortisol'),
+        },
+        '状态平衡\nStatus Balance': {
+            '睾酮/皮质醇比值': ('睾酮/皮质醇比值', 'T/C Ratio'),
+        }
+    },
+
+    '2_执行与代谢系统': {
+        '结构完整性（硬件）\nStructural Integrity (Hardware)': {
+            '肌酸激酶': ('肌酸激酶', 'Creatine Kinase'),
+        },
+        '能量储备与代谢（软件/燃料）\nEnergy Reserves and Metabolism (Software/Fuel)': {
+            '血糖': ('血糖', 'Blood Glucose'),
+            '血尿素': ('血尿素', 'Blood Urea'),
+            '尿酸': ('尿酸', 'Uric Acid'),
+        }
+    },
+
+    '3_循环与运载系统': {
+        '输送载体（红细胞）\nTransport Carrier (Red Blood Cells)': {
+            '血红蛋白': ('血红蛋白', 'Hemoglobin'),
+            '红细胞': ('红细胞', 'RBC Count'),
+            '红细胞压积': ('红细胞压积', 'Hematocrit'),
+            '网织红细胞百分比': ('网织红细胞百分比', 'Reticulocyte %'),
+            '平均红细胞容积': ('平均红细胞容积', 'MCV'),
+        },
+        '生化原料（造血储备）\nBiochemical Raw Materials (Hematopoietic Reserves)': {
+            '铁蛋白': ('铁蛋白', 'Ferritin'),
+            '维生素B12': ('维生素B12', 'Vitamin B12'),
+            '维生素B6': ('维生素B6', 'Vitamin B6'),
+            '叶酸': ('叶酸', 'Folic Acid'),
+        }
+    },
+
+    '4_后勤保障与维护': {
+        '免疫防御（炎性监控）\nImmune Defense (Inflammatory Monitoring)': {
+            '白细胞': ('白细胞', 'WBC Count'),
+            '超敏C反应蛋白': ('超敏C反应蛋白', 'hs-CRP'),
+            '触珠蛋白': ('触珠蛋白', 'Haptoglobin'),
+        },
+        '代谢辅酶（微量营养）\nMetabolic Coenzymes (Micronutrients)': {
+            '维生素B1': ('维生素B1', 'Vitamin B1'),
+            '维生素B2': ('维生素B2', 'Vitamin B2'),
+            '维生素D3': ('维生素D3', 'Vitamin D3'),
+        },
+        '内环境稳态（水盐平衡）\nInternal Environment Homeostasis (Water-Electrolyte Balance)': {
+            '钾': ('钾', 'Potassium'),
+            '钠': ('钠', 'Sodium'),
+            '氯': ('氯', 'Chloride'),
+            '渗透压': ('渗透压', 'Osmotic Pressure'),
+            '血尿素/肌酐': ('血尿素/肌酐', 'BUN/Cr Ratio'),
+        }
+    },
+}
+
+# 雷达图配置
+RADAR_FIELDS = ['睾酮', '皮质醇', '肌酸激酶', '血尿素', '血红蛋白', '铁蛋白', '白细胞', '网织红细胞百分比']
+LOWER_IS_BETTER = ['肌酸激酶', '血尿素', '超敏C反应蛋白', '皮质醇']
+
+# 颜色配置 - 五档评价配色
 COLOR_SEVERE_LOW = '#4A90E2'     # 深海蓝（严重偏低）
 COLOR_LOW = '#8BC1E9'            # 浅天蓝（偏低）
 COLOR_NORMAL = '#E6E6E6'         # 云雾灰（正常）
@@ -293,8 +394,6 @@ RADAR_STYLES = [
     {'color': '#5C7CFA', 'linewidth': 2.5, 'linestyle': '--'}, # 第3次 - 靛蓝
     {'color': '#D05A5E', 'linewidth': 3, 'linestyle': '-'},   # 第4次（最新）- 深砖红
 ]
-
-# ========== 数据加载函数 ==========
 
 def load_data_multisheet(file_path_or_buffer):
     """
@@ -1069,30 +1168,30 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
         cellColours=cell_colors,
         loc='center',
         cellLoc='center',
-        colColours=['#333333'] * 4,
+        colColours=[COLOR_TABLE_HEADER] * 4,
         colWidths=col_widths
     )
 
     table.auto_set_font_size(False)
-    table.set_fontsize(10)
-    table.scale(1, 2.8)  # 增加行高比例
+    table.set_fontsize(FONTSIZE_VALUE)
+    table.scale(1, TABLE_ROW_HEIGHT)  # 增加行高比例
 
     # 样式设置
     for (r, c), cell in table.get_celld().items():
         if r == 0:  # 表头
-            cell.set_text_props(weight='bold', color='white', fontsize=9)
+            cell.set_text_props(weight='bold', color='white', fontsize=FONTSIZE_HEADER)
             cell.set_edgecolor('white')
         elif cell.get_facecolor() == COLOR_CATEGORY_HEADER:  # 分类标题
-            cell.set_text_props(weight='bold', color='white', ha='center', fontsize=11)  # 改为居中
+            cell.set_text_props(weight='bold', color='white', ha='center', fontsize=FONTSIZE_CATEGORY)  # 改为居中
             cell.set_edgecolor('white')
         else:  # 数据行
             cell.set_edgecolor('#DDDDDD')
             if r > 0 and c == 0:  # 指标名称列，左对齐
-                cell.set_text_props(ha='left', fontsize=9)
+                cell.set_text_props(ha='left', fontsize=FONTSIZE_INDICATOR)
             elif r > 0 and c in [1, 2]:  # 数值和范围列，较小字体
-                cell.set_text_props(fontsize=10)
+                cell.set_text_props(fontsize=FONTSIZE_VALUE)
             elif r > 0 and c == 3:  # 评价列
-                cell.set_text_props(fontsize=8.5)
+                cell.set_text_props(fontsize=FONTSIZE_STATUS)
 
     # 获取中英文标题
     if theme_name in CATEGORY_NAMES:
@@ -1607,7 +1706,7 @@ def main():
             with st.spinner("正在生成表格..."):
 
                 for theme_name, categories in THEME_CONFIG.items():
-                    st.markdown(f"### {theme_name.split('_')[-1]}")
+                    st.markdown(f"<h3 style='margin-bottom: {TITLE_TABLE_SPACING}em;'>{theme_name.split('_')[-1]}</h3>", unsafe_allow_html=True)
                     result = plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender)
 
                     if result:
