@@ -208,9 +208,6 @@ CATEGORY_NAMES = {
     '2_执行与代谢系统': ('执行与代谢系统（肌肉与能量状态）', 'Execution and Metabolic System (Muscle and Energy Status)'),
     '3_循环与运载系统': ('循环与运载系统（血液运载能力）', 'Circulation and Transport System (Blood Transport Capacity)'),
     '4_后勤保障与维护': ('后勤保障与维护（免疫与内环境）', 'Logistics Support and Maintenance (Immunity and Internal Environment)'),
-    '5_甲状腺功能': ('甲状腺功能', 'Thyroid Function'),
-    '6_肝脏功能': ('肝脏功能', 'Liver Function'),
-    '7_血脂': ('血脂', 'Blood Lipids'),
 }
 
 THEME_CONFIG = {
@@ -271,38 +268,6 @@ THEME_CONFIG = {
             '氯': ('氯', 'Chloride'),
             '渗透压': ('渗透压', 'Osmotic Pressure'),
             '血尿素/肌酐': ('血尿素/肌酐', 'BUN/Cr Ratio'),
-        }
-    },
-
-    '5_甲状腺功能': {
-        '甲状腺功能\nThyroid Function': {
-            '总甲状腺素': ('总甲状腺素', 'Total Thyroxine'),
-            '总三碘甲状腺原氨酸': ('总三碘甲状腺原氨酸', 'Total T3'),
-            '游离三碘甲状原氨酸': ('游离三碘甲状原氨酸', 'Free T3'),
-            '游离甲状腺素': ('游离甲状腺素', 'Free T4'),
-            '超敏促甲状腺素': ('超敏促甲状腺素', 'hs-TSH'),
-        }
-    },
-
-    '6_肝脏功能': {
-        '肝脏功能\nLiver Function': {
-            '丙氨酸氨基转移酶': ('丙氨酸氨基转移酶', 'ALT'),
-            '天冬氨酸氨基转移酶': ('天冬氨酸氨基转移酶', 'AST'),
-            '碱性磷酸酶': ('碱性磷酸酶', 'ALP'),
-            'γ-谷氨酰基转移酶': ('γ-谷氨酰基转移酶', 'γ-GT'),
-            '总胆红素': ('总胆红素', 'Total Bilirubin'),
-            '直接胆红素': ('直接胆红素', 'Direct Bilirubin'),
-            '总蛋白': ('总蛋白', 'Total Protein'),
-            '间接胆红素': ('间接胆红素', 'Indirect Bilirubin'),
-        }
-    },
-
-    '7_血脂': {
-        '血脂\nBlood Lipids': {
-            '甘油三酯': ('甘油三酯', 'Triglycerides'),
-            '高密度脂蛋白': ('高密度脂蛋白', 'HDL'),
-            '总胆固醇': ('总胆固醇', 'Total Cholesterol'),
-            '低密度脂蛋白': ('低密度脂蛋白', 'LDL'),
         }
     },
 }
