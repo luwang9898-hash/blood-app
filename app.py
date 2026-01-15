@@ -1155,20 +1155,6 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
             cn_name, en_name = name_tuple
             
             # 特殊处理：睾酮/皮质醇比值需要计算
-            if col_key == '睾酮/皮质醇比值':
-                # 查找睾酮和皮质醇
-                testosterone_col = find_indicator_column(athlete_df, '睾酮')
-                cortisol_col = find_indicator_column(athlete_df, '皮质醇')
-                
-                if testosterone_col and cortisol_col and \
-                   testosterone_col in latest_row.index and cortisol_col in latest_row.index:
-                    t_val = latest_row[testosterone_col]
-                    c_val = latest_row[cortisol_col]
-                    
-                    if pd.notna(t_val) and pd.notna(c_val) and c_val != 0:
-                        # 计算比值
-                        val = t_val / c_val
-                        val_str = f"{val:.4f}"  # ⭐ 保留四位小数
                         
                         # ⭐ 判断状态：如果有参考范围则判断，否则固定为"-"和COLOR_NORMAL
                         if col_key in ref_ranges:
