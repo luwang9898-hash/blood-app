@@ -1183,8 +1183,9 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
             cell.set_text_props(weight='bold', color='white', fontsize=FONTSIZE_HEADER)
             cell.set_edgecolor('white')
         elif cell.get_facecolor() == COLOR_CATEGORY_HEADER:  # 分类标题
-            cell.set_text_props(weight='bold', color='white', ha='center', fontsize=FONTSIZE_CATEGORY)  # 改为居中
-            cell.set_edgecolor('white')
+            cell.set_text_props(weight='bold', color='white', ha='center', fontsize=FONTSIZE_CATEGORY)
+            cell.set_edgecolor(COLOR_CATEGORY_HEADER)  # ← 改这里
+            cell.set_linewidth(0)  # ← 加这行
         else:  # 数据行
             cell.set_edgecolor('#DDDDDD')
             if r > 0 and c == 0:  # 指标名称列，左对齐
