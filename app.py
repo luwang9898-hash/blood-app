@@ -1263,7 +1263,7 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
     for (r, c), cell in table.get_celld().items():
         if r == 0:  # 表头
             cell.set_text_props(weight='bold', color='black', fontsize=FONTSIZE_HEADER)  # 黑色文字
-            cell.set_edgecolor('white')
+            cell.set_edgecolor('#DDDDDD')  # 灰色边框
         else:
             # 获取当前单元格颜色（RGBA元组）
             cell_color = cell.get_facecolor()
@@ -1274,13 +1274,13 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
             
             if is_category:  # 分类标题
                 category_cell_count += 1
-                # ⭐ 分类标题：不要边框
-                cell.set_edgecolor('white')  # 白色边框，看不见
-                cell.set_linewidth(0)        # 线宽为0
+                # ⭐ 分类标题：淡灰色边框（保留表格结构）
+                cell.set_edgecolor('#DDDDDD')  # 淡灰边框
+                cell.set_linewidth(1)          # 正常线宽
                 
                 if c == 0:  # 第一列：显示多行文字，居中
                     cell.set_text_props(weight='bold', color='black', ha='center', va='center', fontsize=FONTSIZE_CATEGORY)
-                else:  # 其他列：隐藏文本，但保留边框
+                else:  # 其他列：隐藏文本
                     cell.set_text_props(visible=False)
                     # ⭐ 其他列的背景也设为分类标题颜色，确保整行一致
                     cell.set_facecolor(COLOR_CATEGORY_HEADER)
