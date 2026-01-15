@@ -86,11 +86,11 @@ TABLE_ROW_HEIGHT = 4               # ⭐【修改5】表格行高 - 从3增加�
 # 🔥 版本验证 - 启动时会在终端显示
 # ============================================================================
 print("=" * 60)
-print("🚀 运动员血液指标分析系统 - v17.0 最终完美版")
+print("🚀 运动员血液指标分析系统 - v18.0 完整版")
 print("=" * 60)
-print(f"✅ 修复: 睾酮/皮质醇比值背景色统一为浅灰色")
-print(f"✅ 参考范围: 完整显示所有小数位")
-print(f"✅ 所有指标: 正常匹配")
+print(f"✅ 睾酮/皮质醇比值: 精准匹配 + 保留4位小数")
+print(f"✅ 所有背景色: 统一为浅灰色")
+print(f"✅ 参考范围: 完整精度显示")
 print("=" * 60)
 print("🎨 配色方案:")
 print(f"   正常/无评价: {COLOR_NORMAL} (浅灰色)")
@@ -971,7 +971,7 @@ def find_indicator_column(df, indicator):
     """智能查找指标列（支持带#的列名、模糊匹配、别名匹配）"""
 
     # ⭐ 特殊处理：重要指标优先精确匹配（避免匹配到.1后缀的重复列）
-    PRIORITY_INDICATORS = ['睾酮', '游离睾酮', '皮质醇']
+    PRIORITY_INDICATORS = ['睾酮', '游离睾酮', '皮质醇', '睾酮/皮质醇比值']
     if indicator in PRIORITY_INDICATORS:
         # 优先精确匹配
         if indicator in df.columns:
@@ -1168,7 +1168,7 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
                     if pd.notna(t_val) and pd.notna(c_val) and c_val != 0:
                         # 计算比值
                         val = t_val / c_val
-                        val_str = f"{val:.2f}"
+                        val_str = f"{val:.4f}"  # ⭐ 保留四位小数
                         
                         # ⭐ 判断状态：如果有参考范围则判断，否则固定为"-"和COLOR_NORMAL
                         if col_key in ref_ranges:
