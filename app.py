@@ -269,10 +269,10 @@ THEME_CONFIG = {
     },
 
     '2_执行与代谢系统': {
-        '结构完整性（硬件）\nStructural Integrity \n(Hardware)': {
+        '结构完整性（硬件）\nStructural Integrity\n(Hardware)': {
             '肌酸激酶': ('肌酸激酶', 'Creatine Kinase'),
         },
-        '能量储备与代谢（软件/燃料）\nEnergy Reserves and Metabolism (Software/Fuel)': {
+        '能量储备与代谢（软件/燃料）\nEnergy Reserves and Metabolism\n(Software/Fuel)': {
             '血糖': ('血糖', 'Blood Glucose'),
             '血尿素': ('血尿素', 'Blood Urea'),
             '尿酸': ('尿酸', 'Uric Acid'),
@@ -280,14 +280,14 @@ THEME_CONFIG = {
     },
 
     '3_循环与运载系统': {
-        '输送载体（红细胞）\nTransport Carrier (Red Blood Cells)': {
+        '输送载体（红细胞）\nTransport Carrier\n(Red Blood Cells)': {
             '血红蛋白': ('血红蛋白', 'Hemoglobin'),
             '红细胞': ('红细胞', 'RBC Count'),
             '红细胞压积': ('红细胞压积', 'Hematocrit'),
             '网织红细胞百分比': ('网织红细胞百分比', 'Reticulocyte %'),
             '平均红细胞容积': ('平均红细胞容积', 'MCV'),
         },
-        '生化原料（造血储备）\nBiochemical Raw Materials (Hematopoietic Reserves)': {
+        '生化原料（造血储备）\nBiochemical Raw Materials\n(Hematopoietic Reserves)': {
             '铁蛋白': ('铁蛋白', 'Ferritin'),
             '维生素B12': ('维生素B12', 'Vitamin B12'),
             '维生素B6': ('维生素B6', 'Vitamin B6'),
@@ -296,17 +296,17 @@ THEME_CONFIG = {
     },
 
     '4_后勤保障与维护': {
-        '免疫防御（炎性监控）\nImmune Defense (Inflammatory Monitoring)': {
+        '免疫防御（炎性监控）\nImmune Defense\n(Inflammatory Monitoring)': {
             '白细胞': ('白细胞', 'WBC Count'),
             '超敏C反应蛋白': ('超敏C反应蛋白', 'hs-CRP'),
             '触珠蛋白': ('触珠蛋白', 'Haptoglobin'),
         },
-        '代谢辅酶（微量营养）\nMetabolic Coenzymes (Micronutrients)': {
+        '代谢辅酶（微量营养）\nMetabolic Coenzymes\n(Micronutrients)': {
             '维生素B1': ('维生素B1', 'Vitamin B1'),
             '维生素B2': ('维生素B2', 'Vitamin B2'),
             '维生素D3': ('维生素D3', 'Vitamin D3'),
         },
-        '内环境稳态（水盐平衡）\nInternal Environment Homeostasis (Water-Electrolyte Balance)': {
+        '内环境稳态（水盐平衡）\nInternal Environment Homeostasis\n(Water-Electrolyte Balance)': {
             '钾': ('钾', 'Potassium'),
             '钠': ('钠', 'Sodium'),
             '氯': ('氯', 'Chloride'),
