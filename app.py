@@ -48,14 +48,21 @@ TREND_INDICATORS = ['睾酮', '皮质醇', '肌酸激酶', '血尿素', '血红�
 
 # 【样式1】颜色配置
 # 说明：修改这里可以改变所有颜色
-COLOR_SEVERE_LOW = '#4A90E2'         # 严重偏低 - 深海蓝
-COLOR_LOW = '#8BC1E9'                # 偏低 - 浅天蓝
-COLOR_NORMAL = '#E6E6E6'             # 正常 - 云雾灰
-COLOR_HIGH = '#E89A9D'               # 偏高/良好 - 浅柔红
-COLOR_SEVERE_HIGH = '#D05A5E'        # 严重偏高/优秀 - 深砖红
+# ⭐ 新配色方案：
+# - 正常 → 白色
+# - 偏低/偏高 → 黄色
+# - 严重偏低/严重偏高 → 红色
+# - 良好/优秀 → 绿色
+COLOR_SEVERE_LOW = '#FF6B6B'         # 严重偏低 - 红色
+COLOR_LOW = '#FFD93D'                # 偏低 - 黄色
+COLOR_NORMAL = '#FFFFFF'             # 正常 - 白色
+COLOR_HIGH = '#FFD93D'               # 偏高 - 黄色（和偏低一样）
+COLOR_SEVERE_HIGH = '#FF6B6B'        # 严重偏高 - 红色（和严重偏低一样）
+COLOR_GOOD = '#6BCF7F'               # 良好 - 绿色
+COLOR_EXCELLENT = '#6BCF7F'          # 优秀 - 绿色（和良好一样）
 
-# ⭐【修改1】黑色背景换成浅蓝色
-COLOR_CATEGORY_HEADER = '#C9DDE3'    # 浅蓝色（分类标题背景）
+# ⭐【修改1】二级标题底色改为白色
+COLOR_CATEGORY_HEADER = '#FFFFFF'    # 白色（分类标题背景）
 COLOR_TABLE_HEADER = '#6B9BD1'       # 浅蓝色（表头背景）
 
 COLOR_CHART_BG = '#F8F9FA'           # 图表背景 - 极浅灰
@@ -63,34 +70,39 @@ COLOR_MAIN = '#1f77b4'               # 主色调
 
 # 【样式2】字体大小配置
 # 说明：修改这里可以改变所有字体大小
-FONTSIZE_MAIN_TITLE = 24    # 一级标题字体大小（增大）
+FONTSIZE_MAIN_TITLE = 28    # 一级标题字体大小（增大）
 FONTSIZE_HEADER = 18                 # 表头字体大小
 FONTSIZE_CATEGORY = 16               # ⭐【修改2】分类标题字体（二级标题）- 原来是11
-FONTSIZE_INDICATOR = 16             # ⭐【修改3】指标名称字体 - 原来是9
-FONTSIZE_VALUE = 16                 # ⭐【修改3】数值字体 - 原来是10
-FONTSIZE_STATUS = 16               # ⭐【修改3】状态字体 - 原来是8.5
+FONTSIZE_INDICATOR = 14             # ⭐【修改3】指标名称字体 - 原来是9
+FONTSIZE_VALUE = 14                 # ⭐【修改3】数值字体 - 原来是10
+FONTSIZE_STATUS = 14               # ⭐【修改3】状态字体 - 原来是8.5
 
 # 【样式3】间距配置
 # 说明：修改这里可以改变标题和表格的间距
-TITLE_TABLE_SPACING = -1            # ⭐【修改4】一级标题和表格间距 - 原来是0.5，现在更小
+TITLE_TABLE_SPACING = -0.5            # ⭐【修改4】一级标题和表格间距 - 原来是0.5，现在更小
 TABLE_ROW_HEIGHT = 4               # ⭐【修改5】表格行高 - 从3增加到4，容纳多行标题
 
 # ============================================================================
 # 🔥 版本验证 - 启动时会在终端显示
 # ============================================================================
 print("=" * 60)
-print("🚀 运动员血液指标分析系统 - 终极修复版 v2.0")
+print("🚀 运动员血液指标分析系统 - v10.0 新配色方案")
 print("=" * 60)
-print(f"✅ 二级标题背景色: {COLOR_CATEGORY_HEADER}")
+print(f"✅ 二级标题背景色: {COLOR_CATEGORY_HEADER} (白色)")
+print(f"✅ 二级标题边框: 黑色加粗")
 print(f"✅ 一级标题字体: {FONTSIZE_MAIN_TITLE}号")
 print(f"✅ 标题表格间距: pad=2")
 print("=" * 60)
-print("🔍 如果颜色不是 #C9DDE3，说明用的是旧文件！")
+print("🎨 新配色方案:")
+print(f"   正常: {COLOR_NORMAL} (白色)")
+print(f"   偏低/偏高: {COLOR_LOW}/{COLOR_HIGH} (黄色)")
+print(f"   严重偏低/严重偏高: {COLOR_SEVERE_LOW}/{COLOR_SEVERE_HIGH} (红色)")
+print(f"   良好/优秀: {COLOR_GOOD}/{COLOR_EXCELLENT} (绿色)")
 print("=" * 60)
 # 测试颜色转换
 from matplotlib.colors import to_rgba
 test_color = to_rgba(COLOR_CATEGORY_HEADER)
-print(f"🎨 颜色转换测试: {COLOR_CATEGORY_HEADER} → RGBA{test_color}")
+print(f"🎨 二级标题颜色转换测试: {COLOR_CATEGORY_HEADER} → RGBA{test_color}")
 print("=" * 60)
 
 # ============================================================================
@@ -399,13 +411,15 @@ THEME_CONFIG = {
 RADAR_FIELDS = ['睾酮', '皮质醇', '肌酸激酶', '血尿素', '血红蛋白', '铁蛋白', '白细胞', '网织红细胞百分比']
 LOWER_IS_BETTER = ['肌酸激酶', '血尿素', '超敏C反应蛋白', '皮质醇']
 
-# 颜色配置 - 五档评价配色
-COLOR_SEVERE_LOW = '#4A90E2'     # 深海蓝（严重偏低）
-COLOR_LOW = '#8BC1E9'            # 浅天蓝（偏低）
-COLOR_NORMAL = '#E6E6E6'         # 云雾灰（正常）
-COLOR_HIGH = '#E89A9D'           # 浅柔红（偏高/良好）
-COLOR_SEVERE_HIGH = '#D05A5E'    # 深砖红（严重偏高/优秀）
-COLOR_CATEGORY_HEADER = '#5C7CFA'  # 靛蓝（分类标题）
+# 颜色配置 - 五档评价配色（新配色方案）
+COLOR_SEVERE_LOW = '#FF6B6B'     # 红色（严重偏低）
+COLOR_LOW = '#FFD93D'            # 黄色（偏低）
+COLOR_NORMAL = '#FFFFFF'         # 白色（正常）
+COLOR_HIGH = '#FFD93D'           # 黄色（偏高）
+COLOR_SEVERE_HIGH = '#FF6B6B'    # 红色（严重偏高）
+COLOR_GOOD = '#6BCF7F'           # 绿色（良好）
+COLOR_EXCELLENT = '#6BCF7F'      # 绿色（优秀）
+COLOR_CATEGORY_HEADER = '#FFFFFF'  # 白色（分类标题）
 COLOR_CHART_BG = '#F8F9FA'       # 极浅灰（图表背景）
 COLOR_MAIN = '#1f77b4'          # 主色调
 
@@ -870,12 +884,12 @@ def get_indicator_status(indicator, value, ref_ranges):
             return '偏低', COLOR_LOW, 'low'
         elif pd.notna(high_1) and value > high_1:
             if indicator in high_is_better_indicators:
-                return '优秀', COLOR_SEVERE_HIGH, 'excellent'
+                return '优秀', COLOR_EXCELLENT, 'excellent'  # 使用绿色
             else:
                 return '严重偏高', COLOR_SEVERE_HIGH, 'severe_high'
         elif pd.notna(high_2) and value > high_2:
             if indicator in high_is_better_indicators:
-                return '良好', COLOR_HIGH, 'good'
+                return '良好', COLOR_GOOD, 'good'  # 使用绿色
             else:
                 return '偏高', COLOR_HIGH, 'high'
         else:
@@ -1260,15 +1274,14 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
             
             if is_category:  # 分类标题
                 category_cell_count += 1
-                # 所有分类标题单元格都去掉边框，颜色统一
-                cell.set_edgecolor(COLOR_CATEGORY_HEADER)
-                cell.set_linewidth(0)
+                # ⭐ 分类标题：黑色边框，加粗
+                cell.set_edgecolor('black')  # 黑色边框
+                cell.set_linewidth(2)        # 加粗线条
                 
                 if c == 0:  # 第一列：显示多行文字，居中
-                    cell.set_text_props(weight='bold', color='#2C3E50', ha='center', va='center', fontsize=FONTSIZE_CATEGORY)
-                else:  # 其他列：隐藏文本，完全透明
+                    cell.set_text_props(weight='bold', color='black', ha='center', va='center', fontsize=FONTSIZE_CATEGORY)
+                else:  # 其他列：隐藏文本，但保留边框
                     cell.set_text_props(visible=False)
-                    cell.set_alpha(0)
                     # ⭐ 其他列的背景也设为分类标题颜色，确保整行一致
                     cell.set_facecolor(COLOR_CATEGORY_HEADER)
             else:  # 数据行
