@@ -49,13 +49,13 @@ TREND_INDICATORS = ['睾酮', '皮质醇', '肌酸激酶', '血尿素', '血红�
 # 【样式1】颜色配置
 # 说明：修改这里可以改变所有颜色
 # ⭐ 新配色方案：
-# - 正常 → 白色
+# - 正常 → 浅灰色（白色看不见！）
 # - 偏低/偏高 → 黄色
 # - 严重偏低/严重偏高 → 红色
 # - 良好/优秀 → 绿色
 COLOR_SEVERE_LOW = '#FF6B6B'         # 严重偏低 - 红色
 COLOR_LOW = '#FFD93D'                # 偏低 - 黄色
-COLOR_NORMAL = '#FFFFFF'             # 正常 - 白色
+COLOR_NORMAL = '#F5F5F5'             # ⭐ 正常 - 浅灰色（原来白色看不见！）
 COLOR_HIGH = '#FFD93D'               # 偏高 - 黄色（和偏低一样）
 COLOR_SEVERE_HIGH = '#FF6B6B'        # 严重偏高 - 红色（和严重偏低一样）
 COLOR_GOOD = '#6BCF7F'               # 良好 - 绿色
@@ -86,14 +86,14 @@ TABLE_ROW_HEIGHT = 4               # ⭐【修改5】表格行高 - 从3增加�
 # 🔥 版本验证 - 启动时会在终端显示
 # ============================================================================
 print("=" * 60)
-print("🚀 运动员血液指标分析系统 - v14.0 修复版")
+print("🚀 运动员血液指标分析系统 - v16.0 完整精度版")
 print("=" * 60)
-print(f"✅ 恢复宽松匹配逻辑（修复数据丢失问题）")
-print(f"✅ 特殊处理：睾酮、游离睾酮、皮质醇优先精确匹配")
-print(f"✅ 背景: 全白，边框灰色")
+print(f"✅ 修复: 参考范围完整显示所有小数位")
+print(f"✅ 正常值: 浅灰色可见")
+print(f"✅ 匹配: 所有指标正常匹配")
 print("=" * 60)
 print("🎨 配色方案:")
-print(f"   正常: {COLOR_NORMAL} (白色)")
+print(f"   正常: {COLOR_NORMAL} (浅灰色)")
 print(f"   偏低/偏高: {COLOR_LOW}/{COLOR_HIGH} (黄色)")
 print(f"   严重: {COLOR_SEVERE_LOW}/{COLOR_SEVERE_HIGH} (红色)")
 print(f"   优秀: {COLOR_GOOD}/{COLOR_EXCELLENT} (绿色)")
@@ -413,7 +413,7 @@ LOWER_IS_BETTER = ['肌酸激酶', '血尿素', '超敏C反应蛋白', '皮质�
 # 颜色配置 - 五档评价配色（新配色方案）
 COLOR_SEVERE_LOW = '#FF6B6B'     # 红色（严重偏低）
 COLOR_LOW = '#FFD93D'            # 黄色（偏低）
-COLOR_NORMAL = '#FFFFFF'         # 白色（正常）
+COLOR_NORMAL = '#F5F5F5'         # 浅灰色（正常）- 原来白色看不见！
 COLOR_HIGH = '#FFD93D'           # 黄色（偏高）
 COLOR_SEVERE_HIGH = '#FF6B6B'    # 红色（严重偏高）
 COLOR_GOOD = '#6BCF7F'           # 绿色（良好）
@@ -897,6 +897,23 @@ def get_indicator_status(indicator, value, ref_ranges):
         return '-', '#F0F8FF', 'N/A'
 
 
+def format_number(val):
+    """智能格式化数值，保留完整小数位但去除尾部0"""
+    if pd.isna(val):
+        return "—"
+    try:
+        val = float(val)
+        # 如果是整数，直接显示整数
+        if val == int(val):
+            return f"{int(val)}"
+        # 否则保留原始精度，但去除尾部0
+        # 先格式化为字符串，保留足够精度
+        formatted = f"{val:.10f}".rstrip('0').rstrip('.')
+        return formatted
+    except (ValueError, TypeError):
+        return "—"
+
+
 # 指标别名映射（用于处理常见的名称差异）
 INDICATOR_ALIASES = {
     # 红细胞指标
@@ -1173,11 +1190,11 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
                     high_2 = ranges.get('high_2')
                     
                     if pd.notna(low_2) and pd.notna(high_2):
-                        range_str = f"{low_2:.1f}-{high_2:.1f}"
+                        range_str = f"{format_number(low_2)}-{format_number(high_2)}"
                     elif pd.notna(low_2):
-                        range_str = f"≥{low_2:.1f}"
+                        range_str = f"≥{format_number(low_2)}"
                     elif pd.notna(high_2):
-                        range_str = f"≤{high_2:.1f}"
+                        range_str = f"≤{format_number(high_2)}"
             else:
                 # 普通指标处理
                 # 查找实际的列名
@@ -1192,13 +1209,13 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
 
                     if pd.notna(low_2) and pd.notna(high_2):
                         # 两个值都存在，显示范围
-                        range_str = f"{low_2:.1f}-{high_2:.1f}"
+                        range_str = f"{format_number(low_2)}-{format_number(high_2)}"
                     elif pd.notna(low_2):
                         # 只有下限
-                        range_str = f"≥{low_2:.1f}"
+                        range_str = f"≥{format_number(low_2)}"
                     elif pd.notna(high_2):
                         # 只有上限
-                        range_str = f"≤{high_2:.1f}"
+                        range_str = f"≤{format_number(high_2)}"
 
                 if actual_col and actual_col in latest_row.index:
                     val = latest_row[actual_col]
