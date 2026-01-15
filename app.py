@@ -65,8 +65,8 @@ COLOR_EXCELLENT = '#6BCF7F'          # 优秀 - 绿色（和良好一样）
 COLOR_CATEGORY_HEADER = '#FFFFFF'    # 白色（分类标题背景）
 COLOR_TABLE_HEADER = '#6B9BD1'       # 浅蓝色（表头背景）
 
-COLOR_CHART_BG = '#F8F9FA'           # 图表背景 - 极浅灰
-COLOR_MAIN = '#1f77b4'               # 主色调
+COLOR_CHART_BG = '#FFFFFF'           # 图表背景 - 极浅灰
+COLOR_MAIN = '#FFFFFF'               # 主色调
 
 # 【样式2】字体大小配置
 # 说明：修改这里可以改变所有字体大小
