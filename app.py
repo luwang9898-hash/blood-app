@@ -63,7 +63,7 @@ COLOR_MAIN = '#1f77b4'               # 主色调
 
 # 【样式2】字体大小配置
 # 说明：修改这里可以改变所有字体大小
-FONTSIZE_MAIN_TITLE = 28    # 一级标题字体大小（增大）
+FONTSIZE_MAIN_TITLE = 20    # 一级标题字体大小（增大）
 FONTSIZE_HEADER = 18                 # 表头字体大小
 FONTSIZE_CATEGORY = 16               # ⭐【修改2】分类标题字体（二级标题）- 原来是11
 FONTSIZE_INDICATOR = 14             # ⭐【修改3】指标名称字体 - 原来是9
@@ -72,7 +72,7 @@ FONTSIZE_STATUS = 14               # ⭐【修改3】状态字体 - 原来是8.5
 
 # 【样式3】间距配置
 # 说明：修改这里可以改变标题和表格的间距
-TITLE_TABLE_SPACING = -0.5            # ⭐【修改4】一级标题和表格间距 - 原来是0.5，现在更小
+TITLE_TABLE_SPACING = -1            # ⭐【修改4】一级标题和表格间距 - 原来是0.5，现在更小
 TABLE_ROW_HEIGHT = 3               # 表格行高
 
 # ============================================================================
@@ -269,7 +269,7 @@ THEME_CONFIG = {
     },
 
     '2_执行与代谢系统': {
-        '结构完整性（硬件）\nStructural Integrity (Hardware)': {
+        '结构完整性（硬件）\nStructural Integrity \n(Hardware)': {
             '肌酸激酶': ('肌酸激酶', 'Creatine Kinase'),
         },
         '能量储备与代谢（软件/燃料）\nEnergy Reserves and Metabolism (Software/Fuel)': {
