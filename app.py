@@ -63,10 +63,10 @@ COLOR_EXCELLENT = '#6BCF7F'          # 优秀 - 绿色（和良好一样）
 
 # ⭐【修改1】二级标题底色改为白色
 COLOR_CATEGORY_HEADER = '#FFFFFF'    # 白色（分类标题背景）
-COLOR_TABLE_HEADER = '#FFFFFF'       # 浅蓝色（表头背景）
+COLOR_TABLE_HEADER = '#E8E8E8'       # 浅灰色（表头背景）- 改为浅灰，让黑色文字可见
 
-COLOR_CHART_BG = '#FFFFFF'           # 图表背景 - 极浅灰
-COLOR_MAIN = '#FFFFFF'               # 主色调
+COLOR_CHART_BG = '#FFFFFF'           # ⭐ 图表背景 - 全白
+COLOR_MAIN = '#1f77b4'               # 主色调
 
 # 【样式2】字体大小配置
 # 说明：修改这里可以改变所有字体大小
@@ -86,12 +86,12 @@ TABLE_ROW_HEIGHT = 4               # ⭐【修改5】表格行高 - 从3增加�
 # 🔥 版本验证 - 启动时会在终端显示
 # ============================================================================
 print("=" * 60)
-print("🚀 运动员血液指标分析系统 - v10.0 新配色方案")
+print("🚀 运动员血液指标分析系统 - v11.0 全白背景版")
 print("=" * 60)
-print(f"✅ 二级标题背景色: {COLOR_CATEGORY_HEADER} (白色)")
-print(f"✅ 二级标题边框: 黑色加粗")
-print(f"✅ 一级标题字体: {FONTSIZE_MAIN_TITLE}号")
-print(f"✅ 标题表格间距: pad=2")
+print(f"✅ 背景色: 全白 #FFFFFF")
+print(f"✅ 表头背景: 浅灰 #E8E8E8, 文字黑色")
+print(f"✅ 二级标题: 白底，无边框")
+print(f"✅ 行高: {TABLE_ROW_HEIGHT}")
 print("=" * 60)
 print("🎨 新配色方案:")
 print(f"   正常: {COLOR_NORMAL} (白色)")
@@ -1262,7 +1262,7 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
     # 样式设置
     for (r, c), cell in table.get_celld().items():
         if r == 0:  # 表头
-            cell.set_text_props(weight='bold', color='white', fontsize=FONTSIZE_HEADER)
+            cell.set_text_props(weight='bold', color='black', fontsize=FONTSIZE_HEADER)  # 黑色文字
             cell.set_edgecolor('white')
         else:
             # 获取当前单元格颜色（RGBA元组）
@@ -1274,9 +1274,9 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
             
             if is_category:  # 分类标题
                 category_cell_count += 1
-                # ⭐ 分类标题：黑色边框，加粗
-                cell.set_edgecolor('black')  # 黑色边框
-                cell.set_linewidth(2)        # 加粗线条
+                # ⭐ 分类标题：不要边框
+                cell.set_edgecolor('white')  # 白色边框，看不见
+                cell.set_linewidth(0)        # 线宽为0
                 
                 if c == 0:  # 第一列：显示多行文字，居中
                     cell.set_text_props(weight='bold', color='black', ha='center', va='center', fontsize=FONTSIZE_CATEGORY)
