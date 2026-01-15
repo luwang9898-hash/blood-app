@@ -1706,7 +1706,7 @@ def main():
             with st.spinner("正在生成表格..."):
 
                 for theme_name, categories in THEME_CONFIG.items():
-                    st.markdown(f"<h3 style='margin-bottom: {TITLE_TABLE_SPACING}em;'>{theme_name.split('_')[-1]}</h3>", unsafe_allow_html=True)
+                    st.markdown(f"<h2 style='margin-bottom: {TITLE_TABLE_SPACING}em;'>{theme_name.split('_')[-1]}</h3>", unsafe_allow_html=True)
                     result = plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender)
 
                     if result:
