@@ -86,12 +86,11 @@ TABLE_ROW_HEIGHT = 4               # ⭐【修改5】表格行高 - 从3增加�
 # 🔥 版本验证 - 启动时会在终端显示
 # ============================================================================
 print("=" * 60)
-print("🚀 运动员血液指标分析系统 - v13.0 精准匹配版")
+print("🚀 运动员血液指标分析系统 - v14.0 修复版")
 print("=" * 60)
-print(f"✅ 修复: 睾酮、游离睾酮、皮质醇精准匹配")
-print(f"✅ 避免匹配到 .1 后缀的重复列")
-print(f"✅ 背景: 全白 #FFFFFF")
-print(f"✅ 表头: 浅灰 #E8E8E8, 黑字")
+print(f"✅ 恢复宽松匹配逻辑（修复数据丢失问题）")
+print(f"✅ 特殊处理：睾酮、游离睾酮、皮质醇优先精确匹配")
+print(f"✅ 背景: 全白，边框灰色")
 print("=" * 60)
 print("🎨 配色方案:")
 print(f"   正常: {COLOR_NORMAL} (白色)")
@@ -954,8 +953,21 @@ INDICATOR_ALIASES = {
 def find_indicator_column(df, indicator):
     """智能查找指标列（支持带#的列名、模糊匹配、别名匹配）"""
 
-    # ⭐ 关键修复：精确匹配优先（不匹配带.1后缀的）
-    # 特别处理睾酮、游离睾酮、皮质醇等重要指标
+    # ⭐ 特殊处理：重要指标优先精确匹配（避免匹配到.1后缀的重复列）
+    PRIORITY_INDICATORS = ['睾酮', '游离睾酮', '皮质醇']
+    if indicator in PRIORITY_INDICATORS:
+        # 优先精确匹配
+        if indicator in df.columns:
+            return indicator
+        # 如果没有精确匹配，再尝试带#后缀的
+        for col in df.columns:
+            col_str = str(col)
+            if col_str.startswith(indicator):
+                suffix = col_str[len(indicator):]
+                if suffix.startswith('#'):  # 只允许#后缀，不允许.数字
+                    return col
+
+    # 方法1：精确匹配
     if indicator in df.columns:
         return indicator
 
@@ -963,12 +975,10 @@ def find_indicator_column(df, indicator):
     # 先查找是否有直接的别名定义
     if indicator in INDICATOR_ALIASES:
         for alias in INDICATOR_ALIASES[indicator]:
-            # ⭐ 精确匹配别名
             if alias in df.columns:
                 return alias
-            # 也尝试前缀匹配别名（但排除带.数字后缀的）
-            possible_cols = [col for col in df.columns 
-                           if str(col).startswith(alias) and not '.' in str(col)[len(alias):]]
+            # 也尝试前缀匹配别名
+            possible_cols = [col for col in df.columns if str(col).startswith(alias)]
             if possible_cols:
                 return possible_cols[0]
 
@@ -978,29 +988,19 @@ def find_indicator_column(df, indicator):
             # 尝试匹配主名称
             if main_name in df.columns:
                 return main_name
-            possible_cols = [col for col in df.columns 
-                           if str(col).startswith(main_name) and not '.' in str(col)[len(main_name):]]
+            possible_cols = [col for col in df.columns if str(col).startswith(main_name)]
             if possible_cols:
                 return possible_cols[0]
             # 尝试匹配其他别名
             for alias in aliases:
                 if alias in df.columns:
                     return alias
-                possible_cols = [col for col in df.columns 
-                               if str(col).startswith(alias) and not '.' in str(col)[len(alias):]]
+                possible_cols = [col for col in df.columns if str(col).startswith(alias)]
                 if possible_cols:
                     return possible_cols[0]
 
-    # 方法3：前缀匹配（处理带#的列名，但排除带.数字后缀的）
-    # 例如：匹配 "睾酮#1" 但不匹配 "睾酮.1"
-    possible_cols = []
-    for col in df.columns:
-        col_str = str(col)
-        if col_str.startswith(indicator):
-            # 检查后缀：允许#，不允许.数字
-            suffix = col_str[len(indicator):]
-            if suffix == '' or suffix.startswith('#'):  # 精确匹配或带#后缀
-                possible_cols.append(col)
+    # 方法3：前缀匹配（处理带#的列名）
+    possible_cols = [col for col in df.columns if str(col).startswith(indicator)]
     if possible_cols:
         return possible_cols[0]
 
