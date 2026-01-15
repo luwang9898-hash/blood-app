@@ -61,7 +61,7 @@ COLOR_MAIN = '#1f77b4'               # 主色调
 
 # 【样式2】字体大小配置
 # 说明：修改这里可以改变所有字体大小
-FONTSIZE_MAIN_TITLE = 24    # 一级标题字体大小
+FONTSIZE_MAIN_TITLE = 28    # 一级标题字体大小（增大）
 FONTSIZE_HEADER = 18                 # 表头字体大小
 FONTSIZE_CATEGORY = 16               # ⭐【修改2】分类标题字体（二级标题）- 原来是11
 FONTSIZE_INDICATOR = 14             # ⭐【修改3】指标名称字体 - 原来是9
@@ -1209,7 +1209,8 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
         theme_display = theme_name.split('_')[-1]
         title_text = f"{athlete_name} ({gender}) - {theme_display} ({latest_date})"
     
-    plt.title(title_text, y=0.99, fontsize=13, fontweight='bold')
+    # 一级标题：使用配置的字体大小，最小间距
+    ax.set_title(title_text, fontsize=FONTSIZE_MAIN_TITLE, weight='bold', pad=2)
 
     plt.tight_layout()
 
