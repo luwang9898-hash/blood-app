@@ -86,14 +86,14 @@ TABLE_ROW_HEIGHT = 4               # ⭐【修改5】表格行高 - 从3增加�
 # 🔥 版本验证 - 启动时会在终端显示
 # ============================================================================
 print("=" * 60)
-print("🚀 运动员血液指标分析系统 - v16.0 完整精度版")
+print("🚀 运动员血液指标分析系统 - v17.0 最终完美版")
 print("=" * 60)
-print(f"✅ 修复: 参考范围完整显示所有小数位")
-print(f"✅ 正常值: 浅灰色可见")
-print(f"✅ 匹配: 所有指标正常匹配")
+print(f"✅ 修复: 睾酮/皮质醇比值背景色统一为浅灰色")
+print(f"✅ 参考范围: 完整显示所有小数位")
+print(f"✅ 所有指标: 正常匹配")
 print("=" * 60)
 print("🎨 配色方案:")
-print(f"   正常: {COLOR_NORMAL} (浅灰色)")
+print(f"   正常/无评价: {COLOR_NORMAL} (浅灰色)")
 print(f"   偏低/偏高: {COLOR_LOW}/{COLOR_HIGH} (黄色)")
 print(f"   严重: {COLOR_SEVERE_LOW}/{COLOR_SEVERE_HIGH} (红色)")
 print(f"   优秀: {COLOR_GOOD}/{COLOR_EXCELLENT} (绿色)")
@@ -837,19 +837,19 @@ def get_indicator_status(indicator, value, ref_ranges):
     """判断指标状态（五档）- 完全修复版"""
     # 先检查是否为NaN
     if indicator not in ref_ranges or pd.isna(value):
-        return '-', '#F0F8FF', 'N/A'
+        return '-', COLOR_NORMAL, 'N/A'  # ⭐ 改为COLOR_NORMAL
     
     # 🔧 修复1：转换value为数值类型
     try:
         if isinstance(value, str):
             value = value.strip()
             if value == '' or value == '-' or value.lower() == 'nan':
-                return '-', '#F0F8FF', 'N/A'
+                return '-', COLOR_NORMAL, 'N/A'  # ⭐ 改为COLOR_NORMAL
             value = float(value)
         elif not isinstance(value, (int, float)):
             value = float(value)
     except (ValueError, TypeError):
-        return '-', '#F0F8FF', 'N/A'
+        return '-', COLOR_NORMAL, 'N/A'  # ⭐ 改为COLOR_NORMAL
 
     ranges = ref_ranges[indicator]
     
@@ -870,7 +870,7 @@ def get_indicator_status(indicator, value, ref_ranges):
         if high_1 is not None and not isinstance(high_1, (int, float)):
             high_1 = float(high_1) if not pd.isna(high_1) else None
     except (ValueError, TypeError):
-        return '-', '#F0F8FF', 'N/A'
+        return '-', COLOR_NORMAL, 'N/A'  # ⭐ 改为COLOR_NORMAL
 
     # 高优指标列表（高于正常范围是好事）
     high_is_better_indicators = ['铁蛋白', '血红蛋白', '睾酮', '游离睾酮']
@@ -894,7 +894,7 @@ def get_indicator_status(indicator, value, ref_ranges):
         else:
             return '正常', COLOR_NORMAL, 'normal'
     except (TypeError, ValueError):
-        return '-', '#F0F8FF', 'N/A'
+        return '-', COLOR_NORMAL, 'N/A'  # ⭐ 改为COLOR_NORMAL
 
 
 def format_number(val):
@@ -1170,16 +1170,21 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
                         val = t_val / c_val
                         val_str = f"{val:.2f}"
                         
-                        # 判断状态（这里需要根据参考范围判断）
-                        status, bg_color, _ = get_indicator_status(col_key, val, ref_ranges)
+                        # ⭐ 判断状态：如果有参考范围则判断，否则固定为"-"和COLOR_NORMAL
+                        if col_key in ref_ranges:
+                            status, bg_color, _ = get_indicator_status(col_key, val, ref_ranges)
+                        else:
+                            # 没有参考范围，固定使用浅灰色
+                            status = "-"
+                            bg_color = COLOR_NORMAL
                     else:
                         val_str = "—"
                         status = "-"
-                        bg_color = '#F8F8F8'
+                        bg_color = COLOR_NORMAL  # ⭐ 改为COLOR_NORMAL
                 else:
                     val_str = "—"
                     status = "-"
-                    bg_color = '#F8F8F8'
+                    bg_color = COLOR_NORMAL  # ⭐ 改为COLOR_NORMAL
                     missing_indicators.append((col_key, f"{cn_name}/{en_name}"))
                 
                 # 获取正常范围
@@ -1234,15 +1239,15 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
                         except (ValueError, TypeError):
                             val_str = "—"
                             status = "-"
-                            bg_color = '#F8F8F8'
+                            bg_color = COLOR_NORMAL  # ⭐ 改为COLOR_NORMAL
                     else:
                         val_str = "—"
                         status = "-"  # 无数据显示为"-"
-                        bg_color = '#F8F8F8'
+                        bg_color = COLOR_NORMAL  # ⭐ 改为COLOR_NORMAL
                 else:
                     val_str = "—"
                     status = "-"  # 未找到显示为"-"
-                    bg_color = '#F8F8F8'  # 浅灰色背景
+                    bg_color = COLOR_NORMAL  # ⭐ 改为COLOR_NORMAL
                     missing_indicators.append((col_key, f"{cn_name}/{en_name}"))
 
             # 构建双行文本
@@ -1255,7 +1260,7 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
                 status_text = f"{status_cn}\n{status_en}"
             
             cell_text.append([indicator_text, val_str, range_str, status_text])
-            cell_colors.append(['#F8F8F8', bg_color, '#F8F8F8', bg_color])
+            cell_colors.append([COLOR_NORMAL, bg_color, COLOR_NORMAL, bg_color])  # ⭐ 改为COLOR_NORMAL
 
     # 创建图表（4列，高清晰度）
     fig_height = len(cell_text) * 0.9 + 1.5  # 增加行高以容纳双行文本
