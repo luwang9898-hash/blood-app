@@ -63,7 +63,7 @@ COLOR_EXCELLENT = '#6BCF7F'          # 优秀 - 绿色（和良好一样）
 
 # ⭐【修改1】二级标题底色改为白色
 COLOR_CATEGORY_HEADER = '#FFFFFF'    # 白色（分类标题背景）
-COLOR_TABLE_HEADER = '#6B9BD1'       # 浅蓝色（表头背景）
+COLOR_TABLE_HEADER = '#FFFFFF'       # 浅蓝色（表头背景）
 
 COLOR_CHART_BG = '#FFFFFF'           # 图表背景 - 极浅灰
 COLOR_MAIN = '#FFFFFF'               # 主色调
