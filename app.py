@@ -61,15 +61,15 @@ COLOR_MAIN = '#1f77b4'               # 主色调
 
 # 【样式2】字体大小配置
 # 说明：修改这里可以改变所有字体大小
-FONTSIZE_HEADER = 12                 # 表头字体大小
-FONTSIZE_CATEGORY = 14               # ⭐【修改2】分类标题字体（二级标题）- 原来是11
-FONTSIZE_INDICATOR = 11              # ⭐【修改3】指标名称字体 - 原来是9
-FONTSIZE_VALUE = 12                  # ⭐【修改3】数值字体 - 原来是10
-FONTSIZE_STATUS = 11                 # ⭐【修改3】状态字体 - 原来是8.5
+FONTSIZE_HEADER = 25                 # 表头字体大小
+FONTSIZE_CATEGORY = 24               # ⭐【修改2】分类标题字体（二级标题）- 原来是11
+FONTSIZE_INDICATOR = 20             # ⭐【修改3】指标名称字体 - 原来是9
+FONTSIZE_VALUE = 20                  # ⭐【修改3】数值字体 - 原来是10
+FONTSIZE_STATUS = 20                # ⭐【修改3】状态字体 - 原来是8.5
 
 # 【样式3】间距配置
 # 说明：修改这里可以改变标题和表格的间距
-TITLE_TABLE_SPACING = 0.3            # ⭐【修改4】一级标题和表格间距 - 原来是0.5，现在更小
+TITLE_TABLE_SPACING = 0.1            # ⭐【修改4】一级标题和表格间距 - 原来是0.5，现在更小
 TABLE_ROW_HEIGHT = 2.8               # 表格行高
 
 # ============================================================================
