@@ -86,11 +86,11 @@ TABLE_ROW_HEIGHT = 4               # ⭐【修改5】表格行高 - 从3增加�
 # 🔥 版本验证 - 启动时会在终端显示
 # ============================================================================
 print("=" * 60)
-print("🚀 运动员血液指标分析系统 - v18.0 完整版")
+print("🚀 运动员血液指标分析系统 - v19.0 简化版")
 print("=" * 60)
-print(f"✅ 睾酮/皮质醇比值: 精准匹配 + 保留4位小数")
-print(f"✅ 所有背景色: 统一为浅灰色")
-print(f"✅ 参考范围: 完整精度显示")
+print(f"✅ 睾酮/皮质醇比值: 从Excel直接读取（不再计算）")
+print(f"✅ 精准匹配 + 保留4位小数")
+print(f"✅ 所有背景色统一")
 print("=" * 60)
 print("🎨 配色方案:")
 print(f"   正常/无评价: {COLOR_NORMAL} (浅灰色)")
@@ -1154,87 +1154,57 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
             # name_tuple是(中文名, 英文名)
             cn_name, en_name = name_tuple
             
-            # 特殊处理：睾酮/皮质醇比值需要计算
-                        
-                        # ⭐ 判断状态：如果有参考范围则判断，否则固定为"-"和COLOR_NORMAL
-                        if col_key in ref_ranges:
-                            status, bg_color, _ = get_indicator_status(col_key, val, ref_ranges)
+            # 普通指标处理（包括睾酮/皮质醇比值）
+            # 查找实际的列名
+            actual_col = find_indicator_column(athlete_df, col_key)
+
+            # 获取正常范围
+            range_str = "—"
+            if col_key in ref_ranges:
+                ranges = ref_ranges[col_key]
+                low_2 = ranges.get('low_2')
+                high_2 = ranges.get('high_2')
+
+                if pd.notna(low_2) and pd.notna(high_2):
+                    # 两个值都存在，显示范围
+                    range_str = f"{format_number(low_2)}-{format_number(high_2)}"
+                elif pd.notna(low_2):
+                    # 只有下限
+                    range_str = f"≥{format_number(low_2)}"
+                elif pd.notna(high_2):
+                    # 只有上限
+                    range_str = f"≤{format_number(high_2)}"
+
+            if actual_col and actual_col in latest_row.index:
+                val = latest_row[actual_col]
+                status, bg_color, _ = get_indicator_status(col_key, val, ref_ranges)
+
+                if pd.notna(val):
+                    # 🔧 转换为数值类型
+                    try:
+                        val = float(val)
+                        # ⭐ 特殊处理：睾酮/皮质醇比值保留4位小数
+                        if col_key == '睾酮/皮质醇比值':
+                            val_str = f"{val:.4f}"
+                        elif abs(val) >= 1000:
+                            val_str = f"{val:.0f}"
+                        elif abs(val) >= 100:
+                            val_str = f"{val:.1f}"
                         else:
-                            # 没有参考范围，固定使用浅灰色
-                            status = "-"
-                            bg_color = COLOR_NORMAL
-                    else:
+                            val_str = f"{val:.2f}"
+                    except (ValueError, TypeError):
                         val_str = "—"
                         status = "-"
                         bg_color = COLOR_NORMAL  # ⭐ 改为COLOR_NORMAL
                 else:
                     val_str = "—"
-                    status = "-"
+                    status = "-"  # 无数据显示为"-"
                     bg_color = COLOR_NORMAL  # ⭐ 改为COLOR_NORMAL
-                    missing_indicators.append((col_key, f"{cn_name}/{en_name}"))
-                
-                # 获取正常范围
-                range_str = "—"
-                if col_key in ref_ranges:
-                    ranges = ref_ranges[col_key]
-                    low_2 = ranges.get('low_2')
-                    high_2 = ranges.get('high_2')
-                    
-                    if pd.notna(low_2) and pd.notna(high_2):
-                        range_str = f"{format_number(low_2)}-{format_number(high_2)}"
-                    elif pd.notna(low_2):
-                        range_str = f"≥{format_number(low_2)}"
-                    elif pd.notna(high_2):
-                        range_str = f"≤{format_number(high_2)}"
             else:
-                # 普通指标处理
-                # 查找实际的列名
-                actual_col = find_indicator_column(athlete_df, col_key)
-
-                # 获取正常范围
-                range_str = "—"
-                if col_key in ref_ranges:
-                    ranges = ref_ranges[col_key]
-                    low_2 = ranges.get('low_2')
-                    high_2 = ranges.get('high_2')
-
-                    if pd.notna(low_2) and pd.notna(high_2):
-                        # 两个值都存在，显示范围
-                        range_str = f"{format_number(low_2)}-{format_number(high_2)}"
-                    elif pd.notna(low_2):
-                        # 只有下限
-                        range_str = f"≥{format_number(low_2)}"
-                    elif pd.notna(high_2):
-                        # 只有上限
-                        range_str = f"≤{format_number(high_2)}"
-
-                if actual_col and actual_col in latest_row.index:
-                    val = latest_row[actual_col]
-                    status, bg_color, _ = get_indicator_status(col_key, val, ref_ranges)
-
-                    if pd.notna(val):
-                        # 🔧 转换为数值类型
-                        try:
-                            val = float(val)
-                            if abs(val) >= 1000:
-                                val_str = f"{val:.0f}"
-                            elif abs(val) >= 100:
-                                val_str = f"{val:.1f}"
-                            else:
-                                val_str = f"{val:.2f}"
-                        except (ValueError, TypeError):
-                            val_str = "—"
-                            status = "-"
-                            bg_color = COLOR_NORMAL  # ⭐ 改为COLOR_NORMAL
-                    else:
-                        val_str = "—"
-                        status = "-"  # 无数据显示为"-"
-                        bg_color = COLOR_NORMAL  # ⭐ 改为COLOR_NORMAL
-                else:
-                    val_str = "—"
-                    status = "-"  # 未找到显示为"-"
-                    bg_color = COLOR_NORMAL  # ⭐ 改为COLOR_NORMAL
-                    missing_indicators.append((col_key, f"{cn_name}/{en_name}"))
+                val_str = "—"
+                status = "-"  # 未找到显示为"-"
+                bg_color = COLOR_NORMAL  # ⭐ 改为COLOR_NORMAL
+                missing_indicators.append((col_key, f"{cn_name}/{en_name}"))
 
             # 构建双行文本
             indicator_text = f"{cn_name}\n{en_name}"
