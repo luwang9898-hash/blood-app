@@ -200,7 +200,7 @@ MALE_REF_RANGES = {
     # 血糖和代谢
     '血糖': {'low_1': None, 'low_2': 3.9, 'high_2': 6.1, 'high_1': None},
     '尿酸': {'low_1': None, 'low_2': 210.0, 'high_2': 430.0, 'high_1': None},
-    '血尿素': {'low_1': 4.649, 'low_2': 5.33, 'high_2': 7.11, 'high_1': 8.1},
+    '血尿素': {'low_1': None, 'low_2': None, 'high_2': 7, 'high_1': 8},
     '肌酐': {'low_1': None, 'low_2': 53.0, 'high_2': 123.0, 'high_1': None},
     
     # 激素
@@ -262,7 +262,7 @@ MALE_REF_RANGES = {
     '渗透压': {'low_1': None, 'low_2': 275.0, 'high_2': 295.0, 'high_1': None},
     '小红细胞贫血因子': {'low_1': None, 'low_2': 90.0, 'high_2': 140.0, 'high_1': 160.0},
     '低血红蛋白密度': {'low_1': None, 'low_2': None, 'high_2': 4.0, 'high_1': 6.0},
-    '血尿素/肌酐': {'low_1': 12.8285, 'low_2': 15.6088, 'high_2': 24.0353, 'high_1': 29.8236},
+    '血尿素/肌酐': {'low_1': None, 'low_2': None, 'high_2': 20, 'high_1': None},
 }
 
 # ================= 女运动员参考范围 =================
@@ -294,7 +294,7 @@ FEMALE_REF_RANGES = {
     # 血糖和代谢
     '血糖': {'low_1': None, 'low_2': 3.9, 'high_2': 6.1, 'high_1': None},
     '尿酸': {'low_1': None, 'low_2': 155.0, 'high_2': 357.0, 'high_1': None},
-    '血尿素': {'low_1': 3.84, 'low_2': 4.5, 'high_2': 6.18, 'high_1': 7.05},
+    '血尿素': {'low_1': None, 'low_2': None, 'high_2': 7, 'high_1': 8},
     '肌酐': {'low_1': None, 'low_2': 35.0, 'high_2': 97.0, 'high_1': None},
     
     # 激素
@@ -357,7 +357,7 @@ FEMALE_REF_RANGES = {
     '渗透压': {'low_1': None, 'low_2': 275.0, 'high_2': 295.0, 'high_1': None},
     '小红细胞贫血因子': {'low_1': None, 'low_2': 90.0, 'high_2': 140.0, 'high_1': 160.0},
     '低血红蛋白密度': {'low_1': None, 'low_2': None, 'high_2': 4.0, 'high_1': 6.0},
-    '血尿素/肌酐': {'low_1': 13.97, 'low_2': 15.07, 'high_2': 23.27, 'high_1': 28.9},
+    '血尿素/肌酐': {'low_1': None, 'low_2': None, 'high_2': 20, 'high_1': None},
 }
 
 # ================= 雷达图默认指标 =================
