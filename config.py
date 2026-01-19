@@ -205,7 +205,7 @@ MALE_REF_RANGES = {
     
     # 激素
     '睾酮': {'low_1': 230.0, 'low_2': 400.0, 'high_2': 1000.0, 'high_1': 1000.0},
-    '游离睾酮': {'low_1': 0.65, 'low_2': 0.95, 'high_2': 1.31, 'high_1': 1.5},
+    '游离睾酮': {'low_1': None, 'low_2': 8.6, 'high_2': None, 'high_1': None},
     '生物活性睾酮': {'low_1': None, 'low_2': None, 'high_2': None, 'high_1': None},
     '性激素结合球蛋白': {'low_1': None, 'low_2': 15.0, 'high_2': 70.0, 'high_1': None},
     '生长激素': {'low_1': None, 'low_2': 0.0, 'high_2': 0.97, 'high_1': None},
@@ -299,7 +299,7 @@ FEMALE_REF_RANGES = {
     
     # 激素
     '睾酮': {'low_1': 6.0, 'low_2': 30.0, 'high_2': 100.0, 'high_1': 100.0},
-    '游离睾酮': {'low_1': 0.28, 'low_2': 0.41, 'high_2': 0.89, 'high_1': 1.39},
+    '游离睾酮': {'low_1': None, 'low_2': 0.41, 'high_2': None, 'high_1': None},
     '雌二醇': {'low_1': None, 'low_2': 15.0, 'high_2': 350.0, 'high_1': None},
     '生物活性睾酮': {'low_1': None, 'low_2': None, 'high_2': None, 'high_1': None},
     '性激素结合球蛋白': {'low_1': None, 'low_2': 15.0, 'high_2': 70.0, 'high_1': None},
