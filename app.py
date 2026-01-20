@@ -544,8 +544,12 @@ def flatten_multiindex_columns(df, sheet_name):
             # 4. 否则优先使用level1
             
             if str(level0) in basic_info_cols:
-                # 基础信息列：使用level0
-                col_name = str(level0)
+            # ⭐ 修改：基础信息列，只有当level1无效时才使用level0
+                if pd.isna(level1) or str(level1).startswith('Unnamed'):
+                    col_name = str(level0)
+                else:
+        # 如果level1有效，使用level1（实际指标名）
+                    col_name = str(level1)
             elif str(level0) in category_names:
                 # 分类名称：使用level1（实际指标名）
                 if not (pd.isna(level1) or str(level1).startswith('Unnamed')):
