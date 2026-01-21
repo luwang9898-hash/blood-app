@@ -213,11 +213,11 @@ MALE_REF_RANGES = {
     '促卵泡激素': {'low_1': None, 'low_2': 1.5, 'high_2': 12.4, 'high_1': None},
     '促黄体生成素': {'low_1': None, 'low_2': 1.7, 'high_2': 8.6, 'high_1': None},
     '胰岛素样生长因子-1': {'low_1': None, 'low_2': 99.0, 'high_2': 483.0, 'high_1': None},
-    '皮质醇': {'low_1': 10.346, 'low_2': 13.4826, 'high_2': 18.5955, 'high_1': 20.9178},
+    '皮质醇': {'low_1': 10.3, 'low_2': 13.4, 'high_2': 18.6, 'high_1': 20.9},
 
     
     # 红细胞系统
-    '血红蛋白': {'low_1': None, 'low_2': None, 'high_2': 150.0, 'high_1': None},
+    '血红蛋白': {'low_1': None, 'low_2': 150.0, 'high_2': None, 'high_1': None},
     '铁蛋白': {'low_1': 30.0, 'low_2': 80.0, 'high_2': 280.0, 'high_1': None},
     '转铁蛋白': {'low_1': None, 'low_2': None, 'high_2': 3.0, 'high_1': None},
     '可溶性转铁蛋白受体': {'low_1': None, 'low_2': 12.16, 'high_2': 27.25, 'high_1': None},
@@ -227,14 +227,14 @@ MALE_REF_RANGES = {
     '平均红细胞血红蛋白': {'low_1': None, 'low_2': 26.5, 'high_2': 33.5, 'high_1': None},
     '平均血红蛋白浓度': {'low_1': None, 'low_2': 320.0, 'high_2': 360.0, 'high_1': None},
     '有核红细胞绝对计数': {'low_1': None, 'low_2': 0.0, 'high_2': 0.03, 'high_1': None},
-    '网织红细胞百分比': {'low_1': None, 'low_2': 0.42, 'high_2': 2.23, 'high_1': None},
+    '网织红细胞百分比': {'low_1': None, 'low_2': 0.51, 'high_2': 2.17, 'high_1': None},
     '网织红细胞计数': {'low_1': None, 'low_2': 0.0188, 'high_2': 0.1086, 'high_1': None},
     '红细胞压积': {'low_1': None, 'low_2': None, 'high_2': 0.5, 'high_1': None},
     
     # 白细胞和炎症
     '白细胞': {'low_1': None, 'low_2': 4.0, 'high_2': 10.0, 'high_1': None},
     '血小板': {'low_1': None, 'low_2': 150.0, 'high_2': 390.0, 'high_1': None},
-    '超敏C反应蛋白': {'low_1': None, 'low_2': None, 'high_2': 3.0, 'high_1': 10.0},
+    '超敏C反应蛋白': {'low_1': None, 'low_2': None, 'high_2': 1.0, 'high_1': 10.0},
     '触珠蛋白': {'low_1': None, 'low_2': 18.0, 'high_2': 144.0, 'high_1': None},
     
     # 肌肉和运动
@@ -250,7 +250,7 @@ MALE_REF_RANGES = {
     '维生素B12': {'low_1': 150.0, 'low_2': 771.0, 'high_2': 1000.0, 'high_1': 1500.0},
     '叶酸': {'low_1': 3.0, 'low_2': 6.0, 'high_2': 19.02, 'high_1': 40.0},
     '维生素D': {'low_1': 20, 'low_2': 30, 'high_2': 100, 'high_1': None},
-    '钾': {'low_1': 3.84, 'low_2': 4.07, 'high_2': 4.6, 'high_1': 5.02},
+    '钾': {'low_1': None, 'low_2': 3.5, 'high_2': 5.5, 'high_1': None},
     '钠': {'low_1': 138.1, 'low_2': 139.6, 'high_2': 143.0, 'high_1': 146.0},
     '氯': {'low_1': 90.0, 'low_2': 99.0, 'high_2': 110.0, 'high_1': 120.0},
     '钙': {'low_1': 2.2482, 'low_2': 2.3, 'high_2': 2.43, 'high_1': 2.5},
@@ -305,11 +305,11 @@ FEMALE_REF_RANGES = {
     '促卵泡激素': {'low_1': None, 'low_2': 1.7, 'high_2': 134.8, 'high_1': None},
     '促黄体生成素': {'low_1': None, 'low_2': 1.0, 'high_2': 95.6, 'high_1': None},
     '胰岛素样生长因子-1': {'low_1': None, 'low_2': 99.0, 'high_2': 483.0, 'high_1': None},
-    '皮质醇': {'low_1': 10.15, 'low_2': 13.45, 'high_2': 19.13, 'high_1': 21.85},
+    '皮质醇': {'low_1': 10.1, 'low_2': 13.4, 'high_2': 19.1, 'high_1': 21.8},
 
     
     # 红细胞系统
-    '血红蛋白': {'low_1': None, 'low_2': None, 'high_2': 140.0, 'high_1': None},
+    '血红蛋白': {'low_1': None, 'low_2': 140.0, 'high_2': None, 'high_1': None},
     '铁蛋白': {'low_1': 16.0, 'low_2': 35.0, 'high_2': 100.0, 'high_1': None},
     '转铁蛋白': {'low_1': None, 'low_2': None, 'high_2': 3.0, 'high_1': None},
     '可溶性转铁蛋白受体': {'low_1': None, 'low_2': 12.16, 'high_2': 27.25, 'high_1': None},
@@ -326,7 +326,7 @@ FEMALE_REF_RANGES = {
     # 白细胞和炎症
     '白细胞': {'low_1': None, 'low_2': 4.0, 'high_2': 10.0, 'high_1': None},
     '血小板': {'low_1': None, 'low_2': 150.0, 'high_2': 390.0, 'high_1': None},
-    '超敏C反应蛋白': {'low_1': None, 'low_2': None, 'high_2': 3.0, 'high_1': 10.0},
+    '超敏C反应蛋白': {'low_1': None, 'low_2': None, 'high_2': 1.0, 'high_1': 10.0},
     '触珠蛋白': {'low_1': None, 'low_2': 18.0, 'high_2': 144.0, 'high_1': None},
     
     # 肌肉和运动
@@ -342,7 +342,7 @@ FEMALE_REF_RANGES = {
     '维生素B12': {'low_1': 150.0, 'low_2': 771.0, 'high_2': 1000.0, 'high_1': 1500.0},
     '叶酸': {'low_1': 3.0, 'low_2': 6.0, 'high_2': 19.02, 'high_1': 40.0},
     '维生素D': {'low_1': 20, 'low_2': 30, 'high_2': 100, 'high_1': None},
-    '钾': {'low_1': 3.84, 'low_2': 4.07, 'high_2': 4.6, 'high_1': 5.02},
+    '钾': {'low_1': None, 'low_2': 3.5, 'high_2': 5.5, 'high_1': None},
     '钠': {'low_1': 138.1, 'low_2': 139.6, 'high_2': 143.0, 'high_1': 146.0},
     '氯': {'low_1': 90.0, 'low_2': 99.0, 'high_2': 110.0, 'high_1': 120.0},
     '钙': {'low_1': 2.2482, 'low_2': 2.3, 'high_2': 2.43, 'high_1': 2.5},
