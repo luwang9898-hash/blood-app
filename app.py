@@ -396,7 +396,9 @@ THEME_CONFIG = {
         '代谢辅酶（微量营养）\nMetabolic Coenzymes (Micronutrients)': {
             '维生素B1': ('维生素B1', 'Vitamin B1'),
             '维生素B2': ('维生素B2', 'Vitamin B2'),
+            '维生素D2': ('维生素D2', 'Vitamin D2'),
             '维生素D3': ('维生素D3', 'Vitamin D3'),
+            '维生素D': ('维生素D', 'Vitamin D'),
         },
         '内环境稳态（水盐平衡）\nInternal Environment Homeostasis (Water-Electrolyte Balance)': {
             '钾': ('钾', 'Potassium'),
