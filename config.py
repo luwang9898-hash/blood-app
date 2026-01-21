@@ -229,7 +229,7 @@ MALE_REF_RANGES = {
     '有核红细胞绝对计数': {'low_1': None, 'low_2': 0.0, 'high_2': 0.03, 'high_1': None},
     '网织红细胞百分比': {'low_1': None, 'low_2': 0.42, 'high_2': 2.23, 'high_1': None},
     '网织红细胞计数': {'low_1': None, 'low_2': 0.0188, 'high_2': 0.1086, 'high_1': None},
-    '红细胞压积': {'low_1': None, 'low_2': 0.385, 'high_2': 0.445, 'high_1': None},
+    '红细胞压积': {'low_1': None, 'low_2': None, 'high_2': 0.5, 'high_1': None},
     
     # 白细胞和炎症
     '白细胞': {'low_1': None, 'low_2': 4.0, 'high_2': 10.0, 'high_1': None},
@@ -321,7 +321,7 @@ FEMALE_REF_RANGES = {
     '有核红细胞绝对计数': {'low_1': None, 'low_2': 0.0, 'high_2': 0.02, 'high_1': None},
     '网织红细胞百分比': {'low_1': None, 'low_2': 0.51, 'high_2': 2.17, 'high_1': None},
     '网织红细胞计数': {'low_1': None, 'low_2': 0.023, 'high_2': 0.0935, 'high_1': None},
-    '红细胞压积': {'low_1': None, 'low_2': 0.385, 'high_2': 0.445, 'high_1': None},
+    '红细胞压积': {'low_1': None, 'low_2': None, 'high_2': 0.5, 'high_1': None},
     
     # 白细胞和炎症
     '白细胞': {'low_1': None, 'low_2': 4.0, 'high_2': 10.0, 'high_1': None},
