@@ -200,7 +200,7 @@ MALE_REF_RANGES = {
     
     # 血糖和代谢
     '血糖': {'low_1': None, 'low_2': 3.9, 'high_2': 6.1, 'high_1': None},
-    '尿酸': {'low_1': None, 'low_2': 210.0, 'high_2': 430.0, 'high_1': None},
+    '尿酸': {'low_1': None, 'low_2': None, 'high_2': 416.0, 'high_1': None},
     '血尿素': {'low_1': None, 'low_2': None, 'high_2': 7, 'high_1': 8},
     '肌酐': {'low_1': None, 'low_2': 53.0, 'high_2': 123.0, 'high_1': None},
     
@@ -218,7 +218,7 @@ MALE_REF_RANGES = {
     
     # 红细胞系统
     '血红蛋白': {'low_1': None, 'low_2': 150.0, 'high_2': None, 'high_1': None},
-    '铁蛋白': {'low_1': 30.0, 'low_2': 80.0, 'high_2': 280.0, 'high_1': None},
+    '铁蛋白': {'low_1': None, 'low_2': 80.0, 'high_2': 300.0, 'high_1': None},
     '转铁蛋白': {'low_1': None, 'low_2': None, 'high_2': 3.0, 'high_1': None},
     '可溶性转铁蛋白受体': {'low_1': None, 'low_2': 12.16, 'high_2': 27.25, 'high_1': None},
     '转铁蛋白饱和度': {'low_1': None, 'low_2': 20.0, 'high_2': 55.0, 'high_1': None},
@@ -251,7 +251,7 @@ MALE_REF_RANGES = {
     '叶酸': {'low_1': 3.0, 'low_2': 6.0, 'high_2': 19.02, 'high_1': 40.0},
     '维生素D': {'low_1': 20, 'low_2': 30, 'high_2': 100, 'high_1': None},
     '钾': {'low_1': None, 'low_2': 3.5, 'high_2': 5.5, 'high_1': None},
-    '钠': {'low_1': 138.1, 'low_2': 139.6, 'high_2': 143.0, 'high_1': 146.0},
+    '钠': {'low_1': None, 'low_2': 135, 'high_2': 145.0, 'high_1': None},
     '氯': {'low_1': 90.0, 'low_2': 99.0, 'high_2': 110.0, 'high_1': 120.0},
     '钙': {'low_1': 2.2482, 'low_2': 2.3, 'high_2': 2.43, 'high_1': 2.5},
     '镁': {'low_1': 0.81, 'low_2': 0.86, 'high_2': 1.0, 'high_1': 1.058},
@@ -291,7 +291,7 @@ FEMALE_REF_RANGES = {
     
     # 血糖和代谢
     '血糖': {'low_1': None, 'low_2': 3.9, 'high_2': 6.1, 'high_1': None},
-    '尿酸': {'low_1': None, 'low_2': 155.0, 'high_2': 357.0, 'high_1': None},
+    '尿酸': {'low_1': None, 'low_2': None, 'high_2': 357.0, 'high_1': None},
     '血尿素': {'low_1': None, 'low_2': None, 'high_2': 7, 'high_1': 8},
     '肌酐': {'low_1': None, 'low_2': 35.0, 'high_2': 97.0, 'high_1': None},
     
@@ -310,7 +310,7 @@ FEMALE_REF_RANGES = {
     
     # 红细胞系统
     '血红蛋白': {'low_1': None, 'low_2': 140.0, 'high_2': None, 'high_1': None},
-    '铁蛋白': {'low_1': 16.0, 'low_2': 35.0, 'high_2': 100.0, 'high_1': None},
+    '铁蛋白': {'low_1': None, 'low_2': 35.0, 'high_2': 200.0, 'high_1': None},
     '转铁蛋白': {'low_1': None, 'low_2': None, 'high_2': 3.0, 'high_1': None},
     '可溶性转铁蛋白受体': {'low_1': None, 'low_2': 12.16, 'high_2': 27.25, 'high_1': None},
     '转铁蛋白饱和度': {'low_1': None, 'low_2': 20.0, 'high_2': 55.0, 'high_1': None},
@@ -343,7 +343,7 @@ FEMALE_REF_RANGES = {
     '叶酸': {'low_1': 3.0, 'low_2': 6.0, 'high_2': 19.02, 'high_1': 40.0},
     '维生素D': {'low_1': 20, 'low_2': 30, 'high_2': 100, 'high_1': None},
     '钾': {'low_1': None, 'low_2': 3.5, 'high_2': 5.5, 'high_1': None},
-    '钠': {'low_1': 138.1, 'low_2': 139.6, 'high_2': 143.0, 'high_1': 146.0},
+    '钠': {'low_1': None, 'low_2': 135, 'high_2': 145.0, 'high_1': None},
     '氯': {'low_1': 90.0, 'low_2': 99.0, 'high_2': 110.0, 'high_1': 120.0},
     '钙': {'low_1': 2.2482, 'low_2': 2.3, 'high_2': 2.43, 'high_1': 2.5},
     '镁': {'low_1': 0.81, 'low_2': 0.86, 'high_2': 1.0, 'high_1': 1.058},
