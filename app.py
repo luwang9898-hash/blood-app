@@ -1607,13 +1607,13 @@ def plot_radar_chart_with_baseline(athlete_df, radar_fields, lower_is_better, re
                 if pd.notna(low_2):
                     z_lower = (low_2 - stats['mu']) / stats['sigma']
                 else:
-                    z_lower = -2.5  # 没有下限，使用较小值
+                    z_lower = -4  # 没有下限，使用较小值
                 
                 # 计算上限
                 if pd.notna(high_2):
                     z_upper = (high_2 - stats['mu']) / stats['sigma']
                 else:
-                    z_upper = 2.5  # 没有上限，使用较大值
+                    z_upper = 4  # 没有上限，使用较大值
                 
                 # 如果是逆指标，取反
                 if field in lower_is_better:
