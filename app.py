@@ -895,7 +895,7 @@ def get_indicator_status(indicator, value, ref_ranges, gender=None):
     high_is_better_indicators = ['铁蛋白', '血红蛋白', '睾酮', '游离睾酮']
     
     # ⭐ 新增：偏高不评价的指标列表（偏高时返回"正常"）
-    no_high_evaluation_indicators = ['维生素B1', '维生素B2''维生素B12']
+    no_high_evaluation_indicators = ['维生素B1', '维生素B2','维生素B12']
     
     # ⭐ 新增：铁蛋白特殊处理 - 过高需要注意
     if indicator == '铁蛋白' and gender:
