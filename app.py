@@ -888,7 +888,7 @@ def get_indicator_status(indicator, value, ref_ranges, gender=None):
         return '-', COLOR_NORMAL, 'N/A'  # ⭐ 改为COLOR_NORMAL
 
     # 高优指标列表（高于正常范围是好事）
-    high_is_better_indicators = ['铁蛋白', '血红蛋白', '睾酮', '游离睾酮']
+    high_is_better_indicators = [ '血红蛋白', '睾酮', '游离睾酮']
     
     # ⭐ 新增：偏高不评价的指标列表（偏高时返回"正常"）
     no_high_evaluation_indicators = ['维生素B1', '维生素B2']
@@ -907,7 +907,7 @@ def get_indicator_status(indicator, value, ref_ranges, gender=None):
         elif pd.notna(high_1) and value > high_1:
             # ⭐ 新增：如果是不评价偏高的指标，返回正常
             if indicator in no_high_evaluation_indicators:
-                return '正常', COLOR_NORMAL, 'normal'
+                return '-', COLOR_NORMAL, '-'
             elif indicator in high_is_better_indicators:
                 return '优秀', COLOR_EXCELLENT, 'excellent'  # 使用绿色
             else:
@@ -960,7 +960,6 @@ INDICATOR_ALIASES = {
     '维生素B1': ['VB1', 'VitB1'],
     '维生素B2': ['VB2', 'VitB2'],
     '维生素B6（PA）': ['VB6', 'VitB6', 'VitB6(PA)', 'B6'],  # ⭐ 修改
-    '维生素B6（PLP）': ['vitB6（PLP）', 'VitB6(PLP)', 'B6(PLP)'],  # ⭐ 新增
     '维生素B12': ['VB12', 'VitB12'],
     '叶酸': ['FOL', '维生素B9'],
     '维生素D3': ['VD3', 'VD3(25-OH)', 'VD-(25-OH)'],
