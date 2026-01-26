@@ -1135,6 +1135,7 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
         '偏高': ('偏高', 'High'),
         '优秀': ('优秀', 'Excellent'),
         '严重偏高': ('严重偏高', 'Severely High'),
+        '需注意': ('需注意', ' Attention'),
         '-': ('—', '—'),  # 无数据或未找到
         'N/A': ('—', '—'),  # 保留兼容
         '未找到': ('—', '—'),  # 保留兼容
