@@ -868,6 +868,8 @@ def get_indicator_status(indicator, value, ref_ranges, gender=None):
 
     ranges = ref_ranges[indicator]
     
+    if not ranges or len(ranges) == 0:
+    return '-', COLOR_NORMAL, 'N/A'
     # 🔧 修复2：确保参考范围值也是数值类型
     try:
         low_1 = ranges.get('low_1')
