@@ -335,7 +335,7 @@ THEME_CONFIG = {
 }
 
 # 雷达图配置
-RADAR_FIELDS = ['睾酮', '皮质醇', '肌酸激酶', '血尿素', '血红蛋白', '铁蛋白', '白细胞', '网织红细胞百分比']
+RADAR_FIELDS = ['游离睾酮', '皮质醇', '肌酸激酶', '血尿素', '血红蛋白', '铁蛋白', '白细胞', '网织红细胞百分比']  # ⭐ 改为游离睾酮
 LOWER_IS_BETTER = ['肌酸激酶', '血尿素', '超敏C反应蛋白', '皮质醇']
 
 # 颜色配置 - 五档评价配色
@@ -411,7 +411,7 @@ THEME_CONFIG = {
 }
 
 # 雷达图配置
-RADAR_FIELDS = ['睾酮', '皮质醇', '肌酸激酶', '血尿素', '血红蛋白', '铁蛋白', '白细胞', '网织红细胞百分比']
+RADAR_FIELDS = ['游离睾酮', '皮质醇', '肌酸激酶', '血尿素', '血红蛋白', '铁蛋白', '白细胞', '网织红细胞百分比']  # ⭐ 改为游离睾酮
 LOWER_IS_BETTER = ['肌酸激酶', '血尿素', '超敏C反应蛋白', '皮质醇']
 
 # 颜色配置 - 五档评价配色（新配色方案）
@@ -841,8 +841,15 @@ def clean_data_final(df):
 
 # ========== 辅助函数 ==========
 
-def get_indicator_status(indicator, value, ref_ranges):
-    """判断指标状态（五档）- 完全修复版"""
+def get_indicator_status(indicator, value, ref_ranges, gender=None):
+    """判断指标状态（五档）- 完全修复版
+    
+    参数:
+    - indicator: 指标名称
+    - value: 指标值
+    - ref_ranges: 参考范围字典
+    - gender: 性别（'男'或'女'），可选，用于铁蛋白特殊评价
+    """
     # 先检查是否为NaN
     if indicator not in ref_ranges or pd.isna(value):
         return '-', COLOR_NORMAL, 'N/A'  # ⭐ 改为COLOR_NORMAL
@@ -885,6 +892,11 @@ def get_indicator_status(indicator, value, ref_ranges):
     
     # ⭐ 新增：偏高不评价的指标列表（偏高时返回"正常"）
     no_high_evaluation_indicators = ['维生素B1', '维生素B2']
+    
+    # ⭐ 新增：铁蛋白特殊处理 - 过高需要注意
+    if indicator == '铁蛋白' and gender:
+        if (gender == '男' and value > 300) or (gender == '女' and value > 200):
+            return '需注意', '#FFA500', 'attention_needed'  # 橙色
 
     # 🔧 修复3：判断状态时添加异常保护
     try:
@@ -948,6 +960,7 @@ INDICATOR_ALIASES = {
     '维生素B1': ['VB1', 'VitB1'],
     '维生素B2': ['VB2', 'VitB2'],
     '维生素B6（PA）': ['VB6', 'VitB6', 'VitB6(PA)', 'B6'],  # ⭐ 修改
+    '维生素B6（PLP）': ['vitB6（PLP）', 'VitB6(PLP)', 'B6(PLP)'],  # ⭐ 新增
     '维生素B12': ['VB12', 'VitB12'],
     '叶酸': ['FOL', '维生素B9'],
     '维生素D3': ['VD3', 'VD3(25-OH)', 'VD-(25-OH)'],
@@ -1206,7 +1219,7 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
                         try:
                             num_str = val_str_raw.lstrip('<>＜＞').strip()
                             val_num = float(num_str)
-                            status, bg_color, _ = get_indicator_status(col_key, val_num, ref_ranges)
+                            status, bg_color, _ = get_indicator_status(col_key, val_num, ref_ranges, gender)
                         except:
                             status = "-"
                             bg_color = COLOR_NORMAL
@@ -1223,7 +1236,7 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
                                 val_str = f"{val:.1f}"
                             else:
                                 val_str = f"{val:.2f}"
-                            status, bg_color, _ = get_indicator_status(col_key, val, ref_ranges)
+                            status, bg_color, _ = get_indicator_status(col_key, val, ref_ranges, gender)
                         except (ValueError, TypeError):
                             val_str = "—"
                             status = "-"
@@ -1583,10 +1596,19 @@ def plot_radar_chart_with_baseline(athlete_df, radar_fields, lower_is_better, re
             high_2 = ranges.get('high_2')  # 正常范围上限
             stats = baseline_stats.get(field)
             
-            if pd.notna(low_2) and pd.notna(high_2) and stats and stats['sigma'] != 0:
-                # 计算正常范围对应的z值
-                z_lower = (low_2 - stats['mu']) / stats['sigma']
-                z_upper = (high_2 - stats['mu']) / stats['sigma']
+            if stats and stats['sigma'] != 0:
+                # ⭐ 修复：分别处理下限和上限
+                # 计算下限
+                if pd.notna(low_2):
+                    z_lower = (low_2 - stats['mu']) / stats['sigma']
+                else:
+                    z_lower = -2.5  # 没有下限，使用较小值
+                
+                # 计算上限
+                if pd.notna(high_2):
+                    z_upper = (high_2 - stats['mu']) / stats['sigma']
+                else:
+                    z_upper = 2.5  # 没有上限，使用较大值
                 
                 # 如果是逆指标，取反
                 if field in lower_is_better:
@@ -1595,11 +1617,11 @@ def plot_radar_chart_with_baseline(athlete_df, radar_fields, lower_is_better, re
                 normal_range_lower.append(z_lower)
                 normal_range_upper.append(z_upper)
             else:
-                # 如果没有参考范围，使用默认值
+                # 没有统计数据，使用默认值
                 normal_range_lower.append(-1)
                 normal_range_upper.append(1)
         else:
-            # 如果没有参考范围，使用默认值
+            # 没有参考范围，使用默认值
             normal_range_lower.append(-1)
             normal_range_upper.append(1)
     
