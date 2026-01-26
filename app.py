@@ -307,7 +307,6 @@ THEME_CONFIG = {
             '铁蛋白': ('铁蛋白', 'Ferritin'),
             '维生素B12': ('维生素B12', 'Vitamin B12'),
             '维生素B6（PA）': ('维生素B6（PA）', 'Vitamin B6 (PA)'),  # ⭐ 修改
-            '维生素B6（PLP）': ('维生素B6（PLP）', 'Vitamin B6 (PLP)'),  # ⭐ 新增
             '叶酸': ('叶酸', 'Folic Acid'),
         }
     },
@@ -384,7 +383,6 @@ THEME_CONFIG = {
             '铁蛋白': ('铁蛋白', 'Ferritin'),
             '维生素B12': ('维生素B12', 'Vitamin B12'),
             '维生素B6（PA）': ('维生素B6（PA）', 'Vitamin B6 (PA)'),  # ⭐ 修改
-            '维生素B6（PLP）': ('维生素B6（PLP）', 'Vitamin B6 (PLP)'),  # ⭐ 新增
             '叶酸': ('叶酸', 'Folic Acid'),
         }
     },
@@ -950,7 +948,6 @@ INDICATOR_ALIASES = {
     '维生素B1': ['VB1', 'VitB1'],
     '维生素B2': ['VB2', 'VitB2'],
     '维生素B6（PA）': ['VB6', 'VitB6', 'VitB6(PA)', 'B6'],  # ⭐ 修改
-    '维生素B6（PLP）': ['vitB6（PLP）', 'VitB6(PLP)', 'B6(PLP)'],  # ⭐ 新增
     '维生素B12': ['VB12', 'VitB12'],
     '叶酸': ['FOL', '维生素B9'],
     '维生素D3': ['VD3', 'VD3(25-OH)', 'VD-(25-OH)'],
