@@ -306,7 +306,8 @@ THEME_CONFIG = {
         '生化原料（造血储备）\nBiochemical Raw Materials (Hematopoietic Reserves)': {
             '铁蛋白': ('铁蛋白', 'Ferritin'),
             '维生素B12': ('维生素B12', 'Vitamin B12'),
-            '维生素B6': ('维生素B6', 'Vitamin B6'),
+            '维生素B6（PA）': ('维生素B6（PA）', 'Vitamin B6 (PA)'),  # ⭐ 修改
+            '维生素B6（PLP）': ('维生素B6（PLP）', 'Vitamin B6 (PLP)'),  # ⭐ 新增
             '叶酸': ('叶酸', 'Folic Acid'),
         }
     },
@@ -382,7 +383,8 @@ THEME_CONFIG = {
         '生化原料（造血储备）\nBiochemical Raw Materials (Hematopoietic Reserves)': {
             '铁蛋白': ('铁蛋白', 'Ferritin'),
             '维生素B12': ('维生素B12', 'Vitamin B12'),
-            '维生素B6': ('维生素B6', 'Vitamin B6'),
+            '维生素B6（PA）': ('维生素B6（PA）', 'Vitamin B6 (PA)'),  # ⭐ 修改
+            '维生素B6（PLP）': ('维生素B6（PLP）', 'Vitamin B6 (PLP)'),  # ⭐ 新增
             '叶酸': ('叶酸', 'Folic Acid'),
         }
     },
@@ -882,6 +884,9 @@ def get_indicator_status(indicator, value, ref_ranges):
 
     # 高优指标列表（高于正常范围是好事）
     high_is_better_indicators = ['铁蛋白', '血红蛋白', '睾酮', '游离睾酮']
+    
+    # ⭐ 新增：偏高不评价的指标列表（偏高时返回"正常"）
+    no_high_evaluation_indicators = ['维生素B1', '维生素B2']
 
     # 🔧 修复3：判断状态时添加异常保护
     try:
@@ -890,12 +895,18 @@ def get_indicator_status(indicator, value, ref_ranges):
         elif pd.notna(low_2) and value < low_2:
             return '偏低', COLOR_LOW, 'low'
         elif pd.notna(high_1) and value > high_1:
-            if indicator in high_is_better_indicators:
+            # ⭐ 新增：如果是不评价偏高的指标，返回正常
+            if indicator in no_high_evaluation_indicators:
+                return '正常', COLOR_NORMAL, 'normal'
+            elif indicator in high_is_better_indicators:
                 return '优秀', COLOR_EXCELLENT, 'excellent'  # 使用绿色
             else:
                 return '严重偏高', COLOR_SEVERE_HIGH, 'severe_high'
         elif pd.notna(high_2) and value > high_2:
-            if indicator in high_is_better_indicators:
+            # ⭐ 新增：如果是不评价偏高的指标，返回正常
+            if indicator in no_high_evaluation_indicators:
+                return '正常', COLOR_NORMAL, 'normal'
+            elif indicator in high_is_better_indicators:
                 return '良好', COLOR_GOOD, 'good'  # 使用绿色
             else:
                 return '偏高', COLOR_HIGH, 'high'
@@ -938,7 +949,8 @@ INDICATOR_ALIASES = {
     # 维生素指标（季度测试）
     '维生素B1': ['VB1', 'VitB1'],
     '维生素B2': ['VB2', 'VitB2'],
-    '维生素B6': ['VB6', 'VitB6', 'VitB6(PA)', 'vitB6（PLP）'],
+    '维生素B6（PA）': ['VB6', 'VitB6', 'VitB6(PA)', 'B6'],  # ⭐ 修改
+    '维生素B6（PLP）': ['vitB6（PLP）', 'VitB6(PLP)', 'B6(PLP)'],  # ⭐ 新增
     '维生素B12': ['VB12', 'VitB12'],
     '叶酸': ['FOL', '维生素B9'],
     '维生素D3': ['VD3', 'VD3(25-OH)', 'VD-(25-OH)'],
@@ -1185,25 +1197,40 @@ def plot_theme_table(athlete_df, theme_name, categories, ref_ranges, gender):
 
             if actual_col and actual_col in latest_row.index:
                 val = latest_row[actual_col]
-                status, bg_color, _ = get_indicator_status(col_key, val, ref_ranges)
-
+                
                 if pd.notna(val):
-                    # 🔧 转换为数值类型
-                    try:
-                        val = float(val)
-                        # ⭐ 特殊处理：睾酮/皮质醇比值保留4位小数
-                        if col_key == '睾酮/皮质醇比值':
-                            val_str = f"{val:.4f}"
-                        elif abs(val) >= 1000:
-                            val_str = f"{val:.0f}"
-                        elif abs(val) >= 100:
-                            val_str = f"{val:.1f}"
-                        else:
-                            val_str = f"{val:.2f}"
-                    except (ValueError, TypeError):
-                        val_str = "—"
-                        status = "-"
-                        bg_color = COLOR_NORMAL  # ⭐ 改为COLOR_NORMAL
+                    # 🔧 处理带<或>符号的值
+                    val_str_raw = str(val).strip()
+                    
+                    # ⭐ 特殊处理：保留<或>符号
+                    if val_str_raw.startswith('<') or val_str_raw.startswith('>') or val_str_raw.startswith('＜') or val_str_raw.startswith('＞'):
+                        val_str = val_str_raw  # 直接使用原始字符串
+                        # 尝试提取数值进行评价
+                        try:
+                            num_str = val_str_raw.lstrip('<>＜＞').strip()
+                            val_num = float(num_str)
+                            status, bg_color, _ = get_indicator_status(col_key, val_num, ref_ranges)
+                        except:
+                            status = "-"
+                            bg_color = COLOR_NORMAL
+                    else:
+                        # 正常数值处理
+                        try:
+                            val = float(val)
+                            # ⭐ 特殊处理：睾酮/皮质醇比值保留4位小数
+                            if col_key == '睾酮/皮质醇比值':
+                                val_str = f"{val:.4f}"
+                            elif abs(val) >= 1000:
+                                val_str = f"{val:.0f}"
+                            elif abs(val) >= 100:
+                                val_str = f"{val:.1f}"
+                            else:
+                                val_str = f"{val:.2f}"
+                            status, bg_color, _ = get_indicator_status(col_key, val, ref_ranges)
+                        except (ValueError, TypeError):
+                            val_str = "—"
+                            status = "-"
+                            bg_color = COLOR_NORMAL
                 else:
                     val_str = "—"
                     status = "-"  # 无数据显示为"-"
