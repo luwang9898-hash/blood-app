@@ -1576,7 +1576,7 @@ def plot_radar_chart_with_baseline(athlete_df, radar_fields, lower_is_better, re
             athlete_z_scores.append(z)
 
     max_abs_z = max([abs(z) for z in athlete_z_scores]) if athlete_z_scores else 0
-    limit = max(2.5, np.ceil(max_abs_z * 2) / 2)
+    limit = max(3, np.ceil(max_abs_z * 2) / 2)
 
     # 设置标签
     labels = [f + ('\n(逆)' if f in lower_is_better else '') for f in radar_fields]
